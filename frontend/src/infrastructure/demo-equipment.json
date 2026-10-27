@@ -1,0 +1,56 @@
+[
+  {
+    "id": 1,
+    "code": "LAP-001",
+    "name": "Laptop para desarrollo",
+    "category": "Computadoras",
+    "status": "disponible",
+    "location": "Laboratorio de software",
+    "description": "Equipo portátil para programación y actividades académicas."
+  },
+  {
+    "id": 2,
+    "code": "IOT-001",
+    "name": "Kit de desarrollo ESP32",
+    "category": "IoT y electrónica",
+    "status": "disponible",
+    "location": "Laboratorio de electrónica",
+    "description": "Microcontrolador con conectividad Wi-Fi y Bluetooth para prototipos."
+  },
+  {
+    "id": 3,
+    "code": "PRO-001",
+    "name": "Proyector multimedia",
+    "category": "Audiovisuales",
+    "status": "disponible",
+    "location": "Bodega de equipos",
+    "description": "Proyector para presentaciones, clases y exposiciones."
+  },
+  {
+    "id": 4,
+    "code": "CAM-001",
+    "name": "Cámara digital",
+    "category": "Audiovisuales",
+    "status": "mantenimiento",
+    "location": "Soporte técnico",
+    "description": "Revisión del sistema óptico. No disponible para préstamo."
+  },
+  {
+    "id": 5,
+    "code": "LAB-001",
+    "name": "Osciloscopio digital",
+    "category": "Laboratorio",
+    "status": "disponible",
+    "location": "Laboratorio de electrónica",
+    "description": "Instrumento para analizar señales en prácticas de laboratorio."
+  },
+  {
+    "id": 6,
+    "code": "IOT-002",
+    "name": "Kit de sensores Arduino",
+    "category": "IoT y electrónica",
+    "status": "fuera_servicio",
+    "location": "Soporte técnico",
+    "description": "Equipo de ejemplo fuera de servicio y bloqueado para préstamo."
+  }
+]

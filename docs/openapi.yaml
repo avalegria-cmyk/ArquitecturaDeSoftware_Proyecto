@@ -1,0 +1,728 @@
+openapi: 3.0.3
+info:
+  title: UniEquipos API inicial
+  version: 0.4.0
+  description: Login, catálogo con altas, solicitudes de reserva, disponibilidad e historial propio. Aprobaciones secuenciales por rol; inicio y devolución con evidencia fotográfica por unidad.
+servers:
+  - url: http://localhost:8088/api
+security:
+  - sessionCookie: []
+paths:
+  /equipment/update:
+    post:
+      summary: Modificar metadatos e imágenes de una unidad; administrador o encargado
+      description: Conserva estado operativo e historial. photos admite hasta cinco JPEG base64, 4 MiB cada uno; removeImageIds retira imágenes de esta unidad. Máximo cinco imágenes resultantes.
+      parameters:
+        - $ref: "#/components/parameters/RequestedWith"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, code, name, category, location, description]
+              properties:
+                id: { type: integer, minimum: 1 }
+                code: { type: string, maxLength: 30 }
+                name: { type: string, maxLength: 120 }
+                category: { type: string, maxLength: 60 }
+                location: { type: string, maxLength: 120 }
+                description: { type: string, maxLength: 2000 }
+                photos:
+                  {
+                    type: array,
+                    maxItems: 5,
+                    items: { type: string, format: byte, maxLength: 5592408 },
+                  }
+                removeImageIds:
+                  {
+                    type: array,
+                    maxItems: 5,
+                    items: { type: integer, minimum: 1 },
+                  }
+      responses:
+        "200": { description: Equipo modificado }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+  /equipment/disable:
+    post:
+      summary: Baja lógica de equipo sin préstamo activo; administrador o encargado
+      parameters:
+        - $ref: "#/components/parameters/RequestedWith"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: integer, minimum: 1 }
+      responses:
+        "200": { description: Unidad deshabilitada e historial conservado }
+        "403": { description: Sin permiso o unidad con préstamo activo }
+        "422": { $ref: "#/components/responses/Error" }
+  /equipment/images/{id}:
+    get:
+      summary: Imagen de inventario para usuarios autenticados
+      parameters:
+        - {
+            in: path,
+            name: id,
+            required: true,
+            schema: { type: integer, minimum: 1 },
+          }
+      responses:
+        "200":
+          description: Imagen privada JPEG
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+        "401": { $ref: "#/components/responses/Error" }
+  /reports:
+    get:
+      summary: Historial y conteos por equipo; administrador y encargado
+      parameters:
+        - {
+            in: query,
+            name: equipmentId,
+            schema: { type: integer, minimum: 1 },
+          }
+      responses:
+        "200":
+          {
+            description: Instantánea con equipment,
+            loans,
+            reviews y generatedAt; conteos de préstamos iniciados,
+          }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+  /reports/export:
+    get:
+      summary: Descargar XLSX general o por unidad; administrador y encargado
+      parameters:
+        - {
+            in: query,
+            name: equipmentId,
+            schema: { type: integer, minimum: 1 },
+          }
+      responses:
+        "200":
+          description: Excel con hojas Equipos, Préstamos, Revisiones e Información; no contiene fotografías
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+  /maintenance/complete:
+    post:
+      summary: Registrar revisión con foto y habilitar equipo; solo administrador y encargado
+      parameters:
+        - $ref: "#/components/parameters/RequestedWith"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [equipmentId, loanId, comments, photo]
+              properties:
+                equipmentId: { type: integer, minimum: 1 }
+                loanId: { type: integer, nullable: true, minimum: 1 }
+                comments: { type: string, minLength: 1, maxLength: 2000 }
+                photo: { type: string, format: byte, maxLength: 5592408 }
+      responses:
+        "200":
+          { description: Revisión y evidencia guardadas; unidad disponible }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { description: Sin permiso o estado/ciclo de la unidad cambiado }
+        "422": { $ref: "#/components/responses/Error" }
+        "413": { description: Foto demasiado grande }
+  /maintenance/reviews:
+    get:
+      summary: Historial de revisiones para administrador y encargado
+      responses:
+        "200":
+          {
+            description: Objeto reviews con equipo,
+            comentarios,
+            reviewer,
+            reviewedAt y photoUrl privada,
+          }
+        "403": { $ref: "#/components/responses/Error" }
+  /maintenance/reviews/{id}/photo:
+    get:
+      summary: Foto privada de revisión para administrador y encargado
+      parameters:
+        - {
+            in: path,
+            name: id,
+            required: true,
+            schema: { type: integer, minimum: 1 },
+          }
+      responses:
+        "200":
+          description: Foto sin caché
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+        "403": { $ref: "#/components/responses/Error" }
+  /maintenance:
+    get:
+      summary: Equipos en mantenimiento con último préstamo y evidencias
+      description: Solo administrador y encargado; incluye altas directas sin préstamo. Cada devolución pasa a mantenimiento salvo unidades fuera de servicio.
+      responses:
+        "200":
+          description: Objeto equipment con una lista de unidades, ubicación, solicitante, reservationId y loan nullable con fechas y URLs privadas de fotos
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+  /events:
+    get:
+      summary: Señales SSE autenticadas de cambios en equipos, reservas y préstamos
+      description: Emite sync al conectar, change al cambiar la revisión y session-expired si vence la sesión. Eventos sin datos personales; el cliente recarga endpoints autorizados. Reconexión automática cada 45 segundos aproximadamente.
+      responses:
+        "200":
+          description: Flujo SSE sin buffering ni caché
+          content:
+            text/event-stream:
+              schema: { type: string }
+        "401": { $ref: "#/components/responses/Error" }
+  /loans:
+    get:
+      summary: Reservas aceptadas propias o todas para administrador y encargado
+      responses:
+        "200":
+          description: Reservas con préstamo, fechas reales, URLs privadas de fotos y reloj del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  serverNow: { type: string, format: date-time }
+                  reservations:
+                    type: array
+                    items: { $ref: "#/components/schemas/Reservation" }
+        "401": { $ref: "#/components/responses/Error" }
+  /loans/start:
+    post:
+      summary: Iniciar uso dentro del horario aprobado, con foto; solo el solicitante
+      description: Bloquea la unidad y guarda préstamo, foto y auditoría atómicamente. Reintento de préstamo activo conserva foto original.
+      parameters:
+        - $ref: "#/components/parameters/RequestedWith"
+      requestBody: { $ref: "#/components/requestBodies/LoanEvidence" }
+      responses:
+        "200":
+          {
+            description: Uso iniciado; loan contiene reservationId y state en_uso,
+          }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "413":
+          { description: Cuerpo mayor de 6 MiB; el proxy puede responder HTML }
+        "422": { $ref: "#/components/responses/Error" }
+  /loans/return:
+    post:
+      summary: Devolver con otra foto; admite devolución anticipada o atrasada
+      parameters:
+        - $ref: "#/components/parameters/RequestedWith"
+      requestBody: { $ref: "#/components/requestBodies/LoanEvidence" }
+      responses:
+        "200":
+          {
+            description: Devolución registrada; loan contiene reservationId y state devuelto. Reintento conserva fecha y foto originales.,
+          }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "413": { description: Cuerpo mayor de 6 MiB }
+        "422": { $ref: "#/components/responses/Error" }
+  /loans/{reservationId}/photos/{phase}:
+    get:
+      summary: Evidencia privada para solicitante, docente responsable y personal autorizado
+      parameters:
+        - {
+            in: path,
+            name: reservationId,
+            required: true,
+            schema: { type: integer, minimum: 1 },
+          }
+        - {
+            in: path,
+            name: phase,
+            required: true,
+            schema: { type: string, enum: [inicio, devolucion] },
+          }
+      responses:
+        "200":
+          description: Foto JPEG sin caché pública
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+  /approvals:
+    get:
+      summary: Bandeja e historial de la fase asignada a la cuenta
+      description: Docente ve reservas donde es responsable; administrador las aprobadas por docente; encargado las aprobadas por jefe. Estudiantes no tienen acceso.
+      responses:
+        "200":
+          description: Solicitudes visibles, con seguimiento y permiso vigente para decidir
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reservations:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: "#/components/schemas/Reservation"
+                        - type: object
+                          properties:
+                            canDecide: { type: boolean }
+                            reviewStage:
+                              {
+                                type: string,
+                                enum:
+                                  [
+                                    docente,
+                                    jefe_laboratorio,
+                                    encargado_laboratorio,
+                                  ],
+                              }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+  /approvals/decision:
+    post:
+      summary: Aceptar o rechazar únicamente la etapa actual asignada al actor
+      description: Rechazo exige motivo. Última aceptación cambia el estado a aceptado. El resto conserva en_revision. No admite repetir decisiones; 409 exige recargar. No registra entrega.
+      parameters:
+        - $ref: "#/components/parameters/RequestedWith"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reservationId, step, outcome, note]
+              properties:
+                reservationId: { type: integer, minimum: 1 }
+                step:
+                  {
+                    type: string,
+                    enum: [docente, jefe_laboratorio, encargado_laboratorio],
+                  }
+                outcome: { type: string, enum: [completado, rechazado] }
+                note:
+                  {
+                    type: string,
+                    maxLength: 1000,
+                    description: Obligatorio y no vacío para rechazar; puede ser vacío al aprobar.,
+                  }
+      responses:
+        "200":
+          description: Evento, estado y auditoría registrados atómicamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reservation:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      status:
+                        {
+                          type: string,
+                          enum: [en_revision, aceptado, rechazado],
+                        }
+                      step:
+                        {
+                          type: string,
+                          enum:
+                            [docente, jefe_laboratorio, encargado_laboratorio],
+                        }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+  /health:
+    get:
+      security: []
+      summary: Estado del proceso HTTP sin comprobar base de datos
+      responses:
+        "200":
+          description: Proceso disponible
+  /auth/login:
+    post:
+      security: []
+      summary: Autenticar y emitir cookie HttpOnly de una hora
+      parameters:
+        - $ref: "#/components/parameters/RequestedWith"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email, maxLength: 190 }
+                password: { type: string, minLength: 1, maxLength: 200 }
+      responses:
+        "200":
+          description: Cuenta autenticada y cookie uni_session establecida
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/User" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+        "429":
+          { description: Demasiados intentos; el proxy puede devolver HTML }
+  /auth/me:
+    get:
+      summary: Cuenta actual con rol vigente
+      responses:
+        "200":
+          description: Perfil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/User" }
+        "401": { $ref: "#/components/responses/Error" }
+  /auth/logout:
+    post:
+      summary: Revocar la sesión y expirar la cookie, operación idempotente
+      parameters:
+        - $ref: "#/components/parameters/RequestedWith"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        "200": { description: Sesión cerrada }
+        "403": { $ref: "#/components/responses/Error" }
+  /equipment:
+    get:
+      summary: Consultar catálogo autenticado
+      responses:
+        "200":
+          description: Equipos y estado actual; no calcula disponibilidad por intervalo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  equipment:
+                    type: array
+                    items: { $ref: "#/components/schemas/Equipment" }
+        "401": { $ref: "#/components/responses/Error" }
+    post:
+      summary: Agregar equipo, solo administrador o encargado
+      parameters:
+        - $ref: "#/components/parameters/RequestedWith"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, name, category, status, location, description]
+              properties:
+                code: { type: string, maxLength: 30 }
+                name: { type: string, maxLength: 120 }
+                category: { type: string, maxLength: 60 }
+                status:
+                  {
+                    type: string,
+                    enum: [disponible, mantenimiento, fuera_servicio],
+                  }
+                location: { type: string, maxLength: 120 }
+                description: { type: string, maxLength: 2000 }
+      responses:
+        "201":
+          description: Equipo registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  equipment: { $ref: "#/components/schemas/Equipment" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+  /reservations:
+    get:
+      summary: Historial de la cuenta autenticada
+      description: No acepta un solicitante enviado por el cliente. Fechas de salida en UTC ISO 8601.
+      responses:
+        "200":
+          description: Reservas con todos sus datos y etapas derivadas de eventos reales
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reservations:
+                    type: array
+                    items: { $ref: "#/components/schemas/Reservation" }
+        "401": { $ref: "#/components/responses/Error" }
+    post:
+      summary: Enviar solicitud como estudiante o docente
+      description: Guarda en revisión y bloquea provisionalmente el intervalo. No aprueba ni envía correo.
+      parameters:
+        - $ref: "#/components/parameters/RequestedWith"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                [equipmentId, teacherId, startsAt, endsAt, purpose, requestKey]
+              properties:
+                equipmentId: { type: integer, minimum: 1 }
+                teacherId: { type: integer, minimum: 1 }
+                startsAt: { $ref: "#/components/schemas/CampusDate" }
+                endsAt: { $ref: "#/components/schemas/CampusDate" }
+                purpose: { type: string, minLength: 1, maxLength: 1000 }
+                requestKey:
+                  {
+                    type: string,
+                    format: uuid,
+                    description: Misma clave al reintentar el mismo envío,
+                  }
+      responses:
+        "201":
+          description: Solicitud registrada o recuperada en un reintento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  reservation:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      status:
+                        {
+                          type: string,
+                          enum: [en_revision, aceptado, rechazado],
+                        }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+  /reservations/teachers:
+    get:
+      summary: Docentes activos para asignar responsable
+      responses:
+        "200":
+          description: Directorio mínimo sin credenciales
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  teachers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string }
+        "401": { $ref: "#/components/responses/Error" }
+  /reservations/availability:
+    get:
+      summary: Equipos disponibles para el intervalo
+      description: Sin fechas devuelve equipos habilitados, sin garantizar disponibilidad temporal. Con fechas exige ambas y descarta solapamientos en revisión y aceptados.
+      parameters:
+        - in: query
+          name: startsAt
+          schema: { $ref: "#/components/schemas/CampusDate" }
+        - in: query
+          name: endsAt
+          schema: { $ref: "#/components/schemas/CampusDate" }
+      responses:
+        "200":
+          description: Consulta previa, se vuelve a validar en el envío
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  intervalChecked: { type: boolean }
+                  equipment:
+                    type: array
+                    items: { $ref: "#/components/schemas/Equipment" }
+        "401": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+  /users:
+    get:
+      summary: Listar cuentas, exclusivamente administrador
+      responses:
+        "200":
+          description: Cuentas sin hashes de contraseñas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items: { $ref: "#/components/schemas/User" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+components:
+  requestBodies:
+    LoanEvidence:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [reservationId, photo, completeDeviceConfirmed]
+            properties:
+              reservationId: { type: integer, minimum: 1 }
+              photo:
+                {
+                  type: string,
+                  format: byte,
+                  maxLength: 5592408,
+                  description: JPEG base64 sin prefijo data URL; máximo 4 MiB decodificados; lados entre 480 y 2560 px.,
+                }
+              completeDeviceConfirmed: { type: boolean, enum: [true] }
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: uni_session
+  parameters:
+    RequestedWith:
+      in: header
+      name: X-Requested-With
+      required: true
+      schema: { type: string, enum: [UniEquipos] }
+  responses:
+    Error:
+      description: Solicitud rechazada
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message: { type: string }
+  schemas:
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        role:
+          {
+            type: string,
+            enum: [administrador, encargado, estudiante, docente],
+          }
+    Equipment:
+      type: object
+      properties:
+        id: { type: integer }
+        code: { type: string }
+        name: { type: string }
+        category: { type: string }
+        status:
+          {
+            type: string,
+            enum:
+              [
+                disponible,
+                prestado,
+                mantenimiento,
+                fuera_servicio,
+                deshabilitado,
+              ],
+          }
+        location: { type: string }
+        description: { type: string }
+    CampusDate:
+      type: string
+      example: "2026-11-02T09:00"
+      description: Fecha y hora local de Ecuador en formato YYYY-MM-DDTHH:mm
+    Reservation:
+      type: object
+      properties:
+        equipmentStatus:
+          {
+            type: string,
+            enum:
+              [
+                disponible,
+                prestado,
+                mantenimiento,
+                fuera_servicio,
+                deshabilitado,
+              ],
+          }
+        loan:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            startedAt: { type: string, format: date-time }
+            returnedAt: { type: string, format: date-time, nullable: true }
+            startPhotoUrl: { type: string }
+            returnPhotoUrl: { type: string, nullable: true }
+        id: { type: integer }
+        reference: { type: string }
+        status: { type: string, enum: [en_revision, aceptado, rechazado] }
+        createdAt: { type: string, format: date-time }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        purpose: { type: string }
+        requester: { $ref: "#/components/schemas/ReservationPerson" }
+        teacher: { $ref: "#/components/schemas/ReservationPerson" }
+        equipment:
+          type: object
+          properties:
+            id: { type: integer }
+            name: { type: string }
+            code: { type: string }
+            category: { type: string }
+            location: { type: string }
+        timeline:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                {
+                  type: string,
+                  enum:
+                    [enviado, docente, jefe_laboratorio, encargado_laboratorio],
+                }
+              label: { type: string }
+              state: { type: string, enum: [pendiente, completado, rechazado] }
+              current: { type: boolean }
+              at: { type: string, format: date-time, nullable: true }
+              actor: { type: string, nullable: true }
+              note: { type: string, nullable: true }
+    ReservationPerson:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }

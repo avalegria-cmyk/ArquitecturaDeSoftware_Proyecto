@@ -1,0 +1,9 @@
+**/node_modules
+**/vendor
+**/dist
+.git
+.env
+backups
+**/.phpunit.result.cache
+**/.phpunit.cache/
+**/.DS_Store

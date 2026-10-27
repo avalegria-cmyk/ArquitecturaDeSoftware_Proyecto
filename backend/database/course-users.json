@@ -1,0 +1,72 @@
+[
+  {
+    "name": "ADONIS VLADIMIR ALEGRIA VALLE",
+    "email": "adonis.alegria@demo.uniequipos.test",
+    "role": "estudiante"
+  },
+  {
+    "name": "CARLOS VICENTE CALAPUCHA ÑACATA",
+    "email": "carlos.calapucha@demo.uniequipos.test",
+    "role": "estudiante"
+  },
+  {
+    "name": "ANDERSON ARQUIMIDES CAMPOS ALVARADO",
+    "email": "anderson.campos@demo.uniequipos.test",
+    "role": "estudiante"
+  },
+  {
+    "name": "EDITH LILIANA CHUICO NAVARRETE",
+    "email": "edith.chuico@demo.uniequipos.test",
+    "role": "estudiante"
+  },
+  {
+    "name": "KEVIN JAIR CHUQUITARCO VELASCO",
+    "email": "kevin.chuquitarco@demo.uniequipos.test",
+    "role": "docente"
+  },
+  {
+    "name": "JOSEPH ANDRES FRANCO VILLAGOMEZ",
+    "email": "joseph.franco@demo.uniequipos.test",
+    "role": "estudiante"
+  },
+  {
+    "name": "FREDDY CRISTHIAN JIMENEZ DAVILA",
+    "email": "freddy.jimenez@demo.uniequipos.test",
+    "role": "estudiante"
+  },
+  {
+    "name": "JUAN DAVID JIMENEZ ROMERO",
+    "email": "juan.jimenez@demo.uniequipos.test",
+    "role": "estudiante"
+  },
+  {
+    "name": "ANDERSON LENIN LARA CHICAIZA",
+    "email": "anderson.lara@demo.uniequipos.test",
+    "role": "estudiante"
+  },
+  {
+    "name": "MIGUEL ANGEL MOLINA LUNA",
+    "email": "miguel.molina@demo.uniequipos.test",
+    "role": "estudiante"
+  },
+  {
+    "name": "HELEN MADAHI QUINTERO PINARGOTE",
+    "email": "helen.quintero@demo.uniequipos.test",
+    "role": "estudiante"
+  },
+  {
+    "name": "ALDO DAMIAN SAULA ZAMBRANO",
+    "email": "aldo.saula@demo.uniequipos.test",
+    "role": "estudiante"
+  },
+  {
+    "name": "PAMELA NICOLE TAPIA CARDENAS",
+    "email": "pamela.tapia@demo.uniequipos.test",
+    "role": "estudiante"
+  },
+  {
+    "name": "DARWIN ANDRES TOAPANTA PAEZ",
+    "email": "darwin.toapanta@demo.uniequipos.test",
+    "role": "estudiante"
+  }
+]
