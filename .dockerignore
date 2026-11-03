@@ -3,7 +3,7 @@
 **/dist
 .git
 .env
-backups
 **/.phpunit.result.cache
 **/.phpunit.cache/
 **/.DS_Store
+backend/database/data.sql

@@ -1,4 +1,0 @@
-CREATE TABLE IF NOT EXISTS equipment_code_sequences (
- prefix VARCHAR(10) PRIMARY KEY,
- last_number BIGINT UNSIGNED NOT NULL DEFAULT 0
-) ENGINE=InnoDB;

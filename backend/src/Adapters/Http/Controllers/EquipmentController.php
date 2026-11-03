@@ -30,7 +30,7 @@ final readonly class EquipmentController
         $remove=$input['removeImageIds'] ?? [];
         if (!is_array($remove) || count($remove)>5) throw new \InvalidArgumentException('Imágenes a retirar no válidas.');
         foreach ($remove as $id) if (!is_int($id) || $id<1) throw new \InvalidArgumentException('Imagen no válida.');
-        $details=new \App\Domain\Equipment\EquipmentEdit('AUTO',Input::text($input,'name'),Input::text($input,'category'),Input::text($input,'location'),Input::text($input,'description'));
+        $details=new \App\Domain\Equipment\EquipmentEdit('AUTO',Input::text($input,'name'),Input::text($input,'category'),Input::text($input,'location'),Input::text($input,'description'),Input::text($input,'status'));
         $this->manage->update($actor,Input::id($input,'id'),$details,$this->photos($input),$remove);
         Response::json(['message'=>'Equipo modificado.']);
     }

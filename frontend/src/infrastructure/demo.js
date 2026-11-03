@@ -22,6 +22,7 @@ const users = ["administrador", "encargado", "estudiante", "docente"].map(
     role,
   }),
 );
+const passwords = new Map(users.map((user) => [user.id, "DemoEquipos2026!"]));
 const reservations = [];
 const reviews = [];
 let current = null;
@@ -123,10 +124,42 @@ export const demoApi = {
   me: async () => ({ user: signedIn() }),
   login: async (email, password) => {
     const user = users.find((u) => u.email === email.trim().toLowerCase());
-    if (!user || password !== "DemoEquipos2026!")
+    if (!user || password !== passwords.get(user.id))
       throw new Error("Correo o contraseña incorrectos.");
     current = user;
     return { user };
+  },
+  changePassword: async ({ currentPassword, newPassword, confirmation }) => {
+    const user = signedIn();
+    if (passwords.get(user.id) !== currentPassword)
+      throw new Error("La contraseña actual es incorrecta.");
+    if (
+      [...newPassword].length < 8 ||
+      new TextEncoder().encode(newPassword).length > 72 ||
+      !newPassword.trim() ||
+      newPassword.includes("\0")
+    )
+      throw new Error(
+        "La contraseña debe tener al menos 8 caracteres y un máximo de 72 bytes.",
+      );
+    if (newPassword !== confirmation)
+      throw new Error("Las contraseñas nuevas no coinciden.");
+    if (newPassword === currentPassword)
+      throw new Error("Elige una contraseña diferente de la actual.");
+    passwords.set(user.id, newPassword);
+    current = null;
+    return {
+      message: "Contraseña actualizada. Inicia sesión con tu nueva contraseña.",
+    };
+  },
+  resetPassword: async (userId) => {
+    if (signedIn().role !== "administrador")
+      throw new Error("Acceso no permitido.");
+    if (!users.some((user) => user.id === userId))
+      throw new Error("La cuenta no existe.");
+    passwords.set(userId, "DemoEquipos2026!");
+    if (current.id === userId) current = null;
+    return { message: "Contraseña inicial restablecida." };
   },
   logout: async () => {
     current = null;
@@ -138,7 +171,13 @@ export const demoApi = {
   users: async () => {
     if (signedIn().role !== "administrador")
       throw new Error("Acceso no permitido.");
-    return { users };
+    return {
+      users: users.map((user) => ({
+        ...user,
+        active: true,
+        canResetPassword: true,
+      })),
+    };
   },
   updateEquipment: async (input) => {
     if (!canManage(signedIn().role)) throw new Error("Acceso no permitido.");
@@ -149,9 +188,18 @@ export const demoApi = {
     );
     if (images.length + input.photos.length > 5)
       throw new Error("Máximo 5 imágenes.");
-    if (item.category.trim().toLowerCase() !== input.category.trim().toLowerCase()) item.code = nextEquipmentCode(input.category);
+    if (
+      item.category.trim().toLowerCase() !== input.category.trim().toLowerCase()
+    )
+      item.code = nextEquipmentCode(input.category);
     for (const key of ["name", "category", "location", "description"])
       item[key] = input[key].trim();
+    if (input.status !== item.status) {
+      if (["prestado", "mantenimiento"].includes(item.status)) throw new Error("El estado actual requiere su propio flujo de devolución o revisión.");
+      if (["prestado", "deshabilitado"].includes(input.status)) throw new Error("Usa el módulo correspondiente para este estado.");
+      if (item.status === "deshabilitado" && input.status !== "disponible") throw new Error("Primero habilita la unidad.");
+      item.status = input.status;
+    }
     item.images = [
       ...images,
       ...input.photos.map((photo, i) => ({

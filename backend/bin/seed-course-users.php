@@ -9,7 +9,7 @@ if (!$password || strlen($password) < 8) {
 }
 
 $users = json_decode(
-    file_get_contents(__DIR__ . '/../database/course-users.json'),
+    file_get_contents(__DIR__ . '/fixtures/course-users.json'),
     true,
     16,
     JSON_THROW_ON_ERROR
@@ -28,21 +28,23 @@ $db = new PDO(
     getenv('MYSQL_PASSWORD'),
     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_EMULATE_PREPARES => false]
 );
-$find = $db->prepare('SELECT id FROM users WHERE email = ?');
-$insert = $db->prepare('INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)');
+$find = $db->prepare('SELECT id FROM users WHERE email = ? OR (name = ? AND role = ?)');
+$insert = $db->prepare('INSERT INTO users (name, email, password_hash, role, initial_password_hash) VALUES (?, ?, ?, ?, ?)');
 $created = 0;
 $preserved = 0;
 $db->beginTransaction();
 try {
     foreach ($users as $user) {
-        $find->execute([$user['email']]);
+        $find->execute([$user['email'], $user['name'], $user['role']]);
         if ($find->fetchColumn()) {
             $preserved++;
             continue;
         }
+        $initial = $user['role'] === 'estudiante' ? explode('@', $user['email'])[0] : $password;
+        $hash = password_hash($initial, PASSWORD_BCRYPT);
         $insert->execute([
             $user['name'], $user['email'],
-            password_hash($password, PASSWORD_BCRYPT), $user['role'],
+            $hash, $user['role'], $hash,
         ]);
         $created++;
     }

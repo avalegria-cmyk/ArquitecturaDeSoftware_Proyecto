@@ -3,7 +3,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: infra/nginx/Dockerfile
+      dockerfile: docker/nginx/Dockerfile
     ports:
       - "127.0.0.1:${APP_PORT:-8088}:80"
     depends_on:
@@ -11,7 +11,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: infra/php/Dockerfile
+      dockerfile: docker/php/Dockerfile
     environment:
       DB_HOST: db
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -46,7 +46,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./backend/database/migrations:/docker-entrypoint-initdb.d:ro
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root --password=$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s

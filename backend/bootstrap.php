@@ -21,7 +21,11 @@ $reservations = new PdoReservationRepository($db);
 $clock = new SystemClock();
 $events = new \App\Adapters\Http\Controllers\EventController(new \App\Application\Realtime\WatchChanges(
     new \App\Infrastructure\Persistence\PdoChangeFeed($db), new CurrentUser($sessions, $users)));
+$passwordRepository = new \App\Infrastructure\Persistence\PdoPasswordRepository($db);
 return [
+    'passwords'=>new \App\Adapters\Http\Controllers\PasswordController(
+        new \App\Application\Identity\ChangePassword($passwordRepository, new NativePasswordHasher(), new NativePasswordHasher()),
+        new \App\Application\Identity\ResetPassword($passwordRepository, $users), getenv('COOKIE_SECURE') === '1'),
     'events'=>$events,
     'reports'=>new \App\Adapters\Http\Controllers\ReportController(new \App\Application\Reports\EquipmentReport(new \App\Infrastructure\Persistence\PdoEquipmentReportRepository($db), new \App\Infrastructure\Reports\XlsxReportExporter())),
     'maintenanceReview'=>new \App\Adapters\Http\Controllers\MaintenanceController(new \App\Application\Maintenance\CompleteMaintenance(new \App\Infrastructure\Persistence\PdoMaintenanceRepository($db), new GdPhotoProcessor(), $clock)),

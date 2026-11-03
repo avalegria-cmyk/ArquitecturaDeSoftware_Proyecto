@@ -29,6 +29,8 @@ try {
     if ($method === 'POST' && $path === '/api/auth/logout') $app['auth']->logout($token);
     if ($method === 'GET' && $path === '/api/events') $app['events']->stream($token);
     $user = $app['currentUser']->execute($token);
+    if ($method === 'POST' && $path === '/api/auth/password') $app['passwords']->change($user, $input);
+    if ($method === 'POST' && $path === '/api/users/reset-password') $app['passwords']->reset($user, $input);
     if ($method === 'GET' && $path === '/api/auth/me') Response::json(['user'=>$user->publicData()]);
     if ($method === 'POST' && $path === '/api/equipment/update') $app['equipment']->update($user,$input);
     if ($method === 'POST' && $path === '/api/equipment/disable') $app['equipment']->disable($user,$input);

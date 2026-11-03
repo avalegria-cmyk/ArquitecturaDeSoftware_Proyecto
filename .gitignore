@@ -5,7 +5,6 @@
 **/.env
 !**/.env.example
 *.log
-backups/
 .phpunit.cache/
 **/.phpunit.result.cache
 **/.phpunit.cache/

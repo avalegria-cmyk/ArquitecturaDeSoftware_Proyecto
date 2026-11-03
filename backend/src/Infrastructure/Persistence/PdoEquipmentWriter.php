@@ -57,15 +57,18 @@ final readonly class PdoEquipmentWriter implements EquipmentWriter, EquipmentMan
     {
         $this->db->beginTransaction();
         try {
-            $query=$this->db->prepare('SELECT id, code, category FROM equipment WHERE id=? FOR UPDATE'); $query->execute([$id]);
+            $query=$this->db->prepare('SELECT id, code, category, status FROM equipment WHERE id=? FOR UPDATE'); $query->execute([$id]);
             $current=$query->fetch();
             if (!$current) throw new \InvalidArgumentException('El equipo no existe.');
+            $active=$this->db->prepare('SELECT id FROM loans WHERE equipment_id=? AND returned_at IS NULL FOR UPDATE');
+            $active->execute([$id]);
+            $status=$details->nextStatus($current['status'],(bool)$active->fetchColumn());
             foreach ($removeIds as $imageId) $this->db->prepare('DELETE FROM equipment_images WHERE id=? AND equipment_id=?')->execute([$imageId,$id]);
             $query=$this->db->prepare('SELECT COUNT(*) FROM equipment_images WHERE equipment_id=?');$query->execute([$id]);
             if ((int)$query->fetchColumn()+count($photos)>5) throw new \InvalidArgumentException('Puedes guardar hasta 5 imágenes por equipo. Retira alguna imagen antes de agregar más.');
             $e=$details->details;
             $code=mb_strtolower(trim($current['category'])) === mb_strtolower(trim($e->category)) ? $current['code'] : $this->nextCode($e->category);
-            $this->db->prepare('UPDATE equipment SET code=?, name=?, category=?, location=?, description=? WHERE id=?')->execute([$code,$e->name,$e->category,$e->location,$e->description,$id]);
+            $this->db->prepare('UPDATE equipment SET code=?, name=?, category=?, status=?, location=?, description=? WHERE id=?')->execute([$code,$e->name,$e->category,$status,$e->location,$e->description,$id]);
             $this->savePhotos($id,$photos);
             $this->db->prepare('INSERT INTO audit_logs (user_id, action) VALUES (?, ?)')->execute([$actorId,'equipment.updated:'.$id]);
             $this->db->commit();

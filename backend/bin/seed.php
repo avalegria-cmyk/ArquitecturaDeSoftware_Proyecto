@@ -7,9 +7,9 @@ if (!$password || strlen($password)<12) {fwrite(STDERR,"Define DEMO_PASSWORD con
 $db->beginTransaction();
 foreach (['administrador'=>'Administración demo','encargado'=>'Encargado demo','estudiante'=>'Estudiante demo','docente'=>'Docente demo'] as $role=>$name) {
  $q=$db->prepare('SELECT id FROM users WHERE email=?');$q->execute([$role.'@demo.uniequipos.test']);
- if (!$q->fetchColumn()) $db->prepare('INSERT INTO users (name,email,password_hash,role) VALUES (?,?,?,?)')->execute([$name,$role.'@demo.uniequipos.test',password_hash($password,PASSWORD_BCRYPT),$role]);
+ if (!$q->fetchColumn()) $db->prepare('INSERT INTO users (name,email,password_hash,role,initial_password_hash) VALUES (?,?,?,?,?)')->execute([$name,$role.'@demo.uniequipos.test',password_hash($password,PASSWORD_BCRYPT),$role,password_hash($password,PASSWORD_BCRYPT)]);
 }
-foreach (json_decode(file_get_contents(__DIR__.'/../database/demo-equipment.json'),true) as $e) {
+foreach (json_decode(file_get_contents(__DIR__.'/fixtures/demo-equipment.json'),true) as $e) {
  $q=$db->prepare('SELECT id FROM equipment WHERE code=?');$q->execute([$e['code']]);
  if (!$q->fetchColumn()) $db->prepare('INSERT INTO equipment (code,name,category,status,location,description) VALUES (?,?,?,?,?,?)')->execute([$e['code'],$e['name'],$e['category'],$e['status'],$e['location'],$e['description']]);
 }

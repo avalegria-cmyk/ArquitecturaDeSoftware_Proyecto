@@ -8,6 +8,47 @@ servers:
 security:
   - sessionCookie: []
 paths:
+  /auth/password:
+    post:
+      summary: Cambiar la contraseña propia y cerrar todas las sesiones de la cuenta
+      parameters:
+        - $ref: "#/components/parameters/RequestedWith"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword, confirmation]
+              properties:
+                currentPassword: { type: string, format: password }
+                newPassword: { type: string, format: password, minLength: 8, description: Máximo 72 bytes UTF-8 }
+                confirmation: { type: string, format: password }
+      responses:
+        "200": { description: Contraseña actualizada y cookie eliminada }
+        "401": { description: Sesión inválida }
+        "409": { description: La cuenta cambió durante la operación }
+        "422": { description: Contraseña actual incorrecta o nueva inválida }
+  /users/reset-password:
+    post:
+      summary: Restablecer la contraseña inicial de una cuenta; solo administrador
+      parameters:
+        - $ref: "#/components/parameters/RequestedWith"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId: { type: integer, minimum: 1 }
+      responses:
+        "200": { description: Contraseña inicial restaurada y sesiones de la cuenta revocadas }
+        "401": { description: Sesión inválida }
+        "403": { description: Solo el administrador tiene permiso }
+        "409": { description: La cuenta cambió durante la operación }
+        "422": { description: Cuenta inválida o sin contraseña inicial configurada }
   /equipment/update:
     post:
       summary: Modificar metadatos e imágenes de una unidad; administrador o encargado

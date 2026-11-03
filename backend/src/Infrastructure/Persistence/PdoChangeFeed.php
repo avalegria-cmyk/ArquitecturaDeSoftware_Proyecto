@@ -10,7 +10,7 @@ final readonly class PdoChangeFeed implements ChangeFeed
     {
         // COUNT detecta commits fuera del orden de asignación de IDs; solo cambios confirmados.
         $row = $this->db->query("SELECT COUNT(*) AS total, COALESCE(MAX(id),0) AS last_id FROM audit_logs
-            WHERE action LIKE 'equipment.%' OR action LIKE 'reservation.%' OR action LIKE 'loan.%'")->fetch();
+            WHERE action LIKE 'equipment.%' OR action LIKE 'reservation.%' OR action LIKE 'loan.%' OR action LIKE 'user.%'")->fetch();
         return $row['total'].':'.$row['last_id'];
     }
 }

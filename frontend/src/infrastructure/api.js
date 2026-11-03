@@ -77,6 +77,13 @@ export const api = {
   logout: () => request("/auth/logout", { method: "POST", body: "{}" }),
   equipment: () => request("/equipment"),
   users: () => request("/users"),
+  changePassword: (input) =>
+    request("/auth/password", { method: "POST", body: JSON.stringify(input) }),
+  resetPassword: (userId) =>
+    request("/users/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ userId }),
+    }),
   updateEquipment: (input) =>
     request("/equipment/update", {
       method: "POST",
