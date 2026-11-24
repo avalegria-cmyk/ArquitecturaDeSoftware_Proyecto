@@ -74,6 +74,16 @@ spring:
                   args:
                     name: mantenimiento
                     fallbackUri: forward:/fallback
+            # Fase 8: Reportes y bitácora (Python FastAPI + MySQL reportes_db).
+            - id: reportes
+              uri: ${REPORTES_URL:http://reportes:3006}
+              predicates:
+                - Path=/api/reports,/api/reports/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: reportes
+                    fallbackUri: forward:/fallback
             - id: monolito
               uri: ${MONOLITO_URL:http://monolito}
               predicates:
