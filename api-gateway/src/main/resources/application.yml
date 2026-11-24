@@ -19,8 +19,9 @@ spring:
           routes:
             # Patrón Strangler: todo lo que aún no se migró sigue yendo al monolito.
             # Cada fase agrega arriba la ruta del microservicio nuevo.
-            - id: monolito-eventos
-              uri: ${MONOLITO_URL:http://monolito}
+            # Fase 2: Notificaciones en tiempo real (Go). Sin Circuit Breaker: es una conexión larga (SSE).
+            - id: notificaciones
+              uri: ${NOTIFICACIONES_URL:http://notificaciones:3007}
               predicates:
                 - Path=/api/events
             - id: monolito

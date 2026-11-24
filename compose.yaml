@@ -16,10 +16,16 @@ services:
       INTERNAL_TOKEN: ${INTERNAL_TOKEN}
       APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8088}
       MONOLITO_URL: http://monolito
+      NOTIFICACIONES_URL: http://notificaciones:3007
       # Mientras Identidad no se migre, el gateway valida la sesión con el monolito.
       AUTH_URL: http://monolito/api/auth/me
     depends_on:
       - monolito
+      - notificaciones
+  notificaciones:
+    build: ./servicio_notificaciones
+    environment:
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
   # Monolito original: sigue atendiendo lo que todavía no se migró (patrón Strangler).
   monolito:
     image: nginx:stable-alpine
@@ -39,6 +45,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       COOKIE_SECURE: ${COOKIE_SECURE:-0}
       APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8088}
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
+      NOTIFICACIONES_URL: http://notificaciones:3007/internal/events
     depends_on:
       db:
         condition: service_healthy

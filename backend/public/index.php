@@ -9,6 +9,17 @@ try {
     $method = $_SERVER['REQUEST_METHOD'];
     if ($method === 'GET' && $path === '/api/health') Response::json(['status'=>'ok']);
     if (!in_array($method, ['GET', 'POST'], true)) Response::json(['message'=>'Método no permitido.'], 405);
+    // Strangler: el monolito avisa al servicio de Notificaciones (Go) cuando una operación cambia datos.
+    if ($method === 'POST' && !str_starts_with($path, '/api/auth/')) {
+        register_shutdown_function(static function (): void {
+            $url = getenv('NOTIFICACIONES_URL'); $token = getenv('INTERNAL_TOKEN');
+            if (!$url || !$token || http_response_code() >= 400) return;
+            if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+            @file_get_contents($url, false, stream_context_create(['http'=>['method'=>'POST', 'timeout'=>1,
+                'header'=>"Content-Type: application/json\r\nX-Internal-Token: {$token}\r\nX-Service: monolito\r\n",
+                'content'=>'{"type":"monolito.cambio"}']]));
+        });
+    }
     $input = [];
     if ($method === 'POST') {
         $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
