@@ -24,6 +24,16 @@ spring:
               uri: ${NOTIFICACIONES_URL:http://notificaciones:3007}
               predicates:
                 - Path=/api/events
+            # Fase 3: Identidad (PHP + MySQL identidad_db).
+            - id: identidad
+              uri: ${IDENTIDAD_URL:http://identidad:3001}
+              predicates:
+                - Path=/api/auth/**,/api/users/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: identidad
+                    fallbackUri: forward:/fallback
             - id: monolito
               uri: ${MONOLITO_URL:http://monolito}
               predicates:
