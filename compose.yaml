@@ -23,6 +23,7 @@ services:
       CATALOGO_URL: http://catalogo:3002
       RESERVAS_URL: http://reservas:3003
       PRESTAMOS_URL: http://prestamos:3004
+      MANTENIMIENTO_URL: http://mantenimiento:3005
     depends_on:
       - monolito
       - notificaciones
@@ -30,6 +31,17 @@ services:
       - catalogo
       - reservas
       - prestamos
+      - mantenimiento
+  mantenimiento:
+    build: ./servicio_mantenimiento
+    environment:
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
+      CATALOGO_URL: http://catalogo:3002
+      PRESTAMOS_URL: http://prestamos:3004
+      NOTIFY_URL: http://notificaciones:3007/internal/events
+    # SQLite: la base es un archivo dentro de este volumen, solo de este servicio.
+    volumes:
+      - micro_mantenimiento_data:/data
   prestamos:
     build: ./servicio_prestamos
     environment:
@@ -136,6 +148,9 @@ services:
       CATALOGO_MONGO_URL: mongodb://catalogo:${CATALOGO_DB_PASSWORD}@mongo:27017/catalogo_db
       RESERVAS_DATABASE_URL: postgres://reservas:${RESERVAS_DB_PASSWORD}@postgres:5432/reservas_db
       PRESTAMOS_DATABASE_URL: postgres://prestamos:${PRESTAMOS_DB_PASSWORD}@postgres:5432/prestamos_db
+      MANTENIMIENTO_DB_PATH: /mantenimiento/mantenimiento.db
+    volumes:
+      - micro_mantenimiento_data:/mantenimiento
     depends_on:
       postgres:
         condition: service_healthy
@@ -209,3 +224,4 @@ volumes:
   micro_mysql_data:
   micro_mongo_data:
   micro_postgres_data:
+  micro_mantenimiento_data:
