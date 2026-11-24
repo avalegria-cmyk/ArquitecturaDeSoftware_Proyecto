@@ -24,6 +24,7 @@ services:
       RESERVAS_URL: http://reservas:3003
       PRESTAMOS_URL: http://prestamos:3004
       MANTENIMIENTO_URL: http://mantenimiento:3005
+      REPORTES_URL: http://reportes:3006
     depends_on:
       - monolito
       - notificaciones
@@ -32,6 +33,19 @@ services:
       - reservas
       - prestamos
       - mantenimiento
+      - reportes
+  reportes:
+    build: ./servicio_reportes
+    environment:
+      DATABASE_URL: mysql+pymysql://reportes:${REPORTES_DB_PASSWORD}@mysql:3306/reportes_db
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
+      CATALOGO_URL: http://catalogo:3002
+      RESERVAS_URL: http://reservas:3003
+      PRESTAMOS_URL: http://prestamos:3004
+      MANTENIMIENTO_URL: http://mantenimiento:3005
+    depends_on:
+      mysql:
+        condition: service_healthy
   mantenimiento:
     build: ./servicio_mantenimiento
     environment:
@@ -39,6 +53,7 @@ services:
       CATALOGO_URL: http://catalogo:3002
       PRESTAMOS_URL: http://prestamos:3004
       NOTIFY_URL: http://notificaciones:3007/internal/events
+      AUDIT_URL: http://reportes:3006/internal/audit
     # SQLite: la base es un archivo dentro de este volumen, solo de este servicio.
     volumes:
       - micro_mantenimiento_data:/data
@@ -50,6 +65,7 @@ services:
       RESERVAS_URL: http://reservas:3003
       CATALOGO_URL: http://catalogo:3002
       NOTIFY_URL: http://notificaciones:3007/internal/events
+      AUDIT_URL: http://reportes:3006/internal/audit
       RUST_LOG: info
     depends_on:
       postgres:
@@ -62,6 +78,7 @@ services:
       CATALOGO_URL: http://catalogo:3002
       IDENTIDAD_URL: http://identidad:3001
       NOTIFY_URL: http://notificaciones:3007/internal/events
+      AUDIT_URL: http://reportes:3006/internal/audit
     depends_on:
       postgres:
         condition: service_healthy
@@ -88,6 +105,7 @@ services:
       MONGO_URL: mongodb://catalogo:${CATALOGO_DB_PASSWORD}@mongo:27017/catalogo_db
       INTERNAL_TOKEN: ${INTERNAL_TOKEN}
       NOTIFY_URL: http://notificaciones:3007/internal/events
+      AUDIT_URL: http://reportes:3006/internal/audit
     depends_on:
       mongo:
         condition: service_healthy
@@ -116,6 +134,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       COOKIE_SECURE: ${COOKIE_SECURE:-0}
       INTERNAL_TOKEN: ${INTERNAL_TOKEN}
+      AUDIT_URL: http://reportes:3006/internal/audit
     depends_on:
       mysql:
         condition: service_healthy
@@ -145,6 +164,7 @@ services:
       LEGACY_DB_PASSWORD: ${MYSQL_PASSWORD}
       MICRO_MYSQL_HOST: mysql
       IDENTIDAD_DB_PASSWORD: ${IDENTIDAD_DB_PASSWORD}
+      REPORTES_DB_PASSWORD: ${REPORTES_DB_PASSWORD}
       CATALOGO_MONGO_URL: mongodb://catalogo:${CATALOGO_DB_PASSWORD}@mongo:27017/catalogo_db
       RESERVAS_DATABASE_URL: postgres://reservas:${RESERVAS_DB_PASSWORD}@postgres:5432/reservas_db
       PRESTAMOS_DATABASE_URL: postgres://prestamos:${PRESTAMOS_DB_PASSWORD}@postgres:5432/prestamos_db

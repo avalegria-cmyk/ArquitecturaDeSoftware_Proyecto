@@ -210,7 +210,22 @@ def mantenimiento(origen):
                 os.chown(ruta + extra, dueño.st_uid, dueño.st_gid)
 
 
-PASOS = [identidad, catalogo, reservas, prestamos, mantenimiento]
+def reportes(origen):
+    destino = mysql(os.environ["MICRO_MYSQL_HOST"], "reportes_db", "reportes", os.environ["REPORTES_DB_PASSWORD"])
+    with destino.cursor() as cur, origen.cursor() as src:
+        esperar_tabla(cur, "audit_logs")
+        cur.execute("SELECT COUNT(*) AS n FROM audit_logs WHERE service = 'monolito'")
+        if cur.fetchone()["n"]:
+            print("reportes: la bitácora del monolito ya se copió.")
+            return
+        src.execute("SELECT user_id, action, created_at FROM audit_logs ORDER BY id")
+        filas = src.fetchall()
+        cur.executemany("INSERT INTO audit_logs (user_id, action, service, created_at) VALUES (%(user_id)s, %(action)s, 'monolito', %(created_at)s)", filas)
+        destino.commit()
+        print(f"reportes: {len(filas)} registros de bitácora copiados.")
+
+
+PASOS = [identidad, catalogo, reservas, prestamos, mantenimiento, reportes]
 
 if __name__ == "__main__":
     origen = monolito()
