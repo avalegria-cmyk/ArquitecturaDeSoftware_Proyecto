@@ -39,7 +39,15 @@ try {
     if ($method === 'POST' && $path === '/api/auth/login') $app['auth']->login($input);
     if ($method === 'POST' && $path === '/api/auth/logout') $app['auth']->logout($token);
     if ($method === 'GET' && $path === '/api/events') $app['events']->stream($token);
-    $user = $app['currentUser']->execute($token);
+    // Strangler: la sesión ya la validó el servicio de Identidad a través del API Gateway.
+    $internal = getenv('INTERNAL_TOKEN') ?: '';
+    $gatewayUser = $_SERVER['HTTP_X_USER_ID'] ?? '';
+    if ($internal !== '' && hash_equals($internal, $_SERVER['HTTP_X_INTERNAL_TOKEN'] ?? '') && ctype_digit($gatewayUser)) {
+        $user = $app['userRepository']->findById((int)$gatewayUser);
+        if (!$user || !$user->active) throw new AuthenticationFailed('La sesión terminó. Inicia sesión nuevamente.');
+    } else {
+        $user = $app['currentUser']->execute($token);
+    }
     if ($method === 'POST' && $path === '/api/auth/password') $app['passwords']->change($user, $input);
     if ($method === 'POST' && $path === '/api/users/reset-password') $app['passwords']->reset($user, $input);
     if ($method === 'GET' && $path === '/api/auth/me') Response::json(['user'=>$user->publicData()]);

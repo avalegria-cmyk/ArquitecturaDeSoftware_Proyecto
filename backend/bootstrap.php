@@ -33,6 +33,7 @@ return [
     'auth'=>new AuthController(new SignIn($users, new NativePasswordHasher(), $sessions, new PdoAuditLog($db)),
         new SignOut($sessions), getenv('COOKIE_SECURE') === '1'),
     'currentUser'=>new CurrentUser($sessions, $users),
+    'userRepository'=>$users,
     'users'=>new ListUsers($users),
     'equipment'=>new EquipmentController(new ListEquipment(new PdoEquipmentRepository($db)), new CreateEquipment(new PdoEquipmentWriter($db), new GdPhotoProcessor()), new \App\Application\Equipment\ManageEquipment(new PdoEquipmentWriter($db), new GdPhotoProcessor())),
     'loans'=>new LoanController(new RecordLoan($reservations, new GdPhotoProcessor(), $clock), new ListLoans($reservations), new ViewLoanPhoto($reservations), $clock),
