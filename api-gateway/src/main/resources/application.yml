@@ -1,0 +1,56 @@
+server:
+  port: ${PORT:3000}
+
+uniequipos:
+  # URL del servicio que valida la cookie de sesión. Vacía = el gateway no autentica (fase 1).
+  auth-url: ${AUTH_URL:}
+  internal-token: ${INTERNAL_TOKEN}
+  app-origin: ${APP_ORIGIN:http://localhost:8088}
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 3000
+          routes:
+            # Patrón Strangler: todo lo que aún no se migró sigue yendo al monolito.
+            # Cada fase agrega arriba la ruta del microservicio nuevo.
+            - id: monolito-eventos
+              uri: ${MONOLITO_URL:http://monolito}
+              predicates:
+                - Path=/api/events
+            - id: monolito
+              uri: ${MONOLITO_URL:http://monolito}
+              predicates:
+                - Path=/api/**
+              filters:
+                - name: Retry
+                  args:
+                    retries: 2
+                    methods: GET
+                    statuses: BAD_GATEWAY,SERVICE_UNAVAILABLE
+                - name: CircuitBreaker
+                  args:
+                    name: monolito
+                    fallbackUri: forward:/fallback
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 30s
+
+logging:
+  level:
+    root: INFO
