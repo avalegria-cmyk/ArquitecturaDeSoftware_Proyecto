@@ -8,6 +8,7 @@ import os
 import time
 
 import re
+import sqlite3
 
 import psycopg
 import pymysql
@@ -175,7 +176,41 @@ def prestamos(origen):
         print(f"prestamos: {len(filas)} préstamos y {len(fotos)} fotos copiados.")
 
 
-PASOS = [identidad, catalogo, reservas, prestamos]
+def mantenimiento(origen):
+    ruta = os.environ["MANTENIMIENTO_DB_PATH"]
+    for _ in range(60):
+        if os.path.exists(ruta):
+            break
+        time.sleep(2)
+    cx = sqlite3.connect(ruta, timeout=10)
+    try:
+        for _ in range(60):
+            if cx.execute("SELECT name FROM sqlite_master WHERE name = 'maintenance_reviews'").fetchone():
+                break
+            time.sleep(2)
+        if cx.execute("SELECT COUNT(*) FROM maintenance_reviews").fetchone()[0]:
+            print("mantenimiento: ya tiene datos, se conserva.")
+            return
+        with origen.cursor() as src:
+            src.execute("""SELECT m.*, e.code, e.name AS equipment_name, u.name AS reviewer_name FROM maintenance_reviews m
+                JOIN equipment e ON e.id = m.equipment_id JOIN users u ON u.id = m.reviewer_id ORDER BY m.id""")
+            filas = src.fetchall()
+        with cx:
+            cx.executemany("""INSERT INTO maintenance_reviews (id, equipment_id, equipment_code, equipment_name, loan_id,
+                reviewer_id, reviewer_name, comments, photo, reviewed_at) VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                [(m["id"], m["equipment_id"], m["code"], m["equipment_name"], m["loan_id"], m["reviewer_id"], m["reviewer_name"],
+                  m["comments"], m["photo"], m["reviewed_at"].strftime("%Y-%m-%dT%H:%M:%SZ")) for m in filas])
+        print(f"mantenimiento: {len(filas)} revisiones copiadas.")
+    finally:
+        cx.close()
+        # Los archivos de SQLite deben seguir perteneciendo al usuario del servicio.
+        dueño = os.stat(ruta)
+        for extra in ("-wal", "-shm"):
+            if os.path.exists(ruta + extra):
+                os.chown(ruta + extra, dueño.st_uid, dueño.st_gid)
+
+
+PASOS = [identidad, catalogo, reservas, prestamos, mantenimiento]
 
 if __name__ == "__main__":
     origen = monolito()

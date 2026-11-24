@@ -64,6 +64,16 @@ spring:
                   args:
                     name: prestamos
                     fallbackUri: forward:/fallback
+            # Fase 7: Mantenimiento (Bun + Fastify + SQLite).
+            - id: mantenimiento
+              uri: ${MANTENIMIENTO_URL:http://mantenimiento:3005}
+              predicates:
+                - Path=/api/maintenance,/api/maintenance/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: mantenimiento
+                    fallbackUri: forward:/fallback
             - id: monolito
               uri: ${MONOLITO_URL:http://monolito}
               predicates:
