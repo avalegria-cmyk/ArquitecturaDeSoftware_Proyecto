@@ -34,6 +34,16 @@ spring:
                   args:
                     name: identidad
                     fallbackUri: forward:/fallback
+            # Fase 4: Catálogo (AdonisJS + MongoDB catalogo_db).
+            - id: catalogo
+              uri: ${CATALOGO_URL:http://catalogo:3002}
+              predicates:
+                - Path=/api/equipment,/api/equipment/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: catalogo
+                    fallbackUri: forward:/fallback
             - id: monolito
               uri: ${MONOLITO_URL:http://monolito}
               predicates:

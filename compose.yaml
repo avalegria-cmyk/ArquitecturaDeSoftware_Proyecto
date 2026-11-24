@@ -20,10 +20,38 @@ services:
       IDENTIDAD_URL: http://identidad:3001
       # El gateway valida cada sesión con el servicio de Identidad.
       AUTH_URL: http://identidad:3001/internal/verify
+      CATALOGO_URL: http://catalogo:3002
     depends_on:
       - monolito
       - notificaciones
       - identidad
+      - catalogo
+  catalogo:
+    build: ./servicio_catalogo
+    environment:
+      APP_KEY: ${CATALOGO_APP_KEY}
+      APP_URL: http://catalogo:3002
+      MONGO_URL: mongodb://catalogo:${CATALOGO_DB_PASSWORD}@mongo:27017/catalogo_db
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
+      NOTIFY_URL: http://notificaciones:3007/internal/events
+    depends_on:
+      mongo:
+        condition: service_healthy
+  # MongoDB de los microservicios: catalogo_db.
+  mongo:
+    image: mongo:8
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      CATALOGO_DB_PASSWORD: ${CATALOGO_DB_PASSWORD}
+    volumes:
+      - micro_mongo_data:/data/db
+      - ./docker/mongo/01-usuario.js:/docker-entrypoint-initdb.d/01-usuario.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
   identidad:
     build: ./servicio_identidad
     environment:
@@ -63,10 +91,13 @@ services:
       LEGACY_DB_PASSWORD: ${MYSQL_PASSWORD}
       MICRO_MYSQL_HOST: mysql
       IDENTIDAD_DB_PASSWORD: ${IDENTIDAD_DB_PASSWORD}
+      CATALOGO_MONGO_URL: mongodb://catalogo:${CATALOGO_DB_PASSWORD}@mongo:27017/catalogo_db
     depends_on:
       db:
         condition: service_healthy
       mysql:
+        condition: service_healthy
+      mongo:
         condition: service_healthy
       identidad:
         condition: service_started
@@ -130,3 +161,4 @@ services:
 volumes:
   mysql_data:
   micro_mysql_data:
+  micro_mongo_data:
