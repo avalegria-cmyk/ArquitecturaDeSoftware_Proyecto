@@ -44,6 +44,16 @@ spring:
                   args:
                     name: catalogo
                     fallbackUri: forward:/fallback
+            # Fase 5: Reservas y aprobaciones (NestJS + PostgreSQL reservas_db).
+            - id: reservas
+              uri: ${RESERVAS_URL:http://reservas:3003}
+              predicates:
+                - Path=/api/reservations,/api/reservations/**,/api/approvals,/api/approvals/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: reservas
+                    fallbackUri: forward:/fallback
             - id: monolito
               uri: ${MONOLITO_URL:http://monolito}
               predicates:
