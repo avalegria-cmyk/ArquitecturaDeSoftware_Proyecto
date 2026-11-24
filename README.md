@@ -1,84 +1,119 @@
-# UniEquipos
+# UniEquipos · Microservicios
 
-Sistema universitario de inventario, reservas, aprobaciones, préstamos, mantenimiento y reportes. Proyecto del Grupo 3 para Arquitectura de Software, desarrollado con Clean Architecture.
+Sistema universitario de inventario, reservas, aprobaciones, préstamos, mantenimiento y reportes. Proyecto del Grupo 3 para Arquitectura de Software (Unidad 2).
+
+El proyecto empezó como un **monolito** (PHP 8.4 con Clean Architecture y una sola base MySQL de 11 tablas). En esta versión se descompuso en **7 microservicios**, cada uno con su propio lenguaje y su propia base de datos, detrás de un **API Gateway**.
+
+## Arquitectura
+
+```text
+Navegador ─► web :8088 (Nginx + React) ─► API Gateway :3000 (Spring Boot)
+                                              │  autenticación, enrutamiento, límite de intentos,
+                                              │  circuit breaker, reintentos y logs con correlación
+   ┌──────────────┬──────────────┬────────────┼─────────────┬───────────────┬──────────────┐
+   ▼              ▼              ▼            ▼             ▼               ▼              ▼
+Identidad     Catálogo       Reservas     Préstamos    Mantenimiento     Reportes    Notificaciones
+PHP 8.4       AdonisJS       NestJS       Rust         Bun + Fastify     FastAPI     Go
+:3001         :3002          :3003        :3004        :3005             :3006       :3007 (SSE)
+MySQL         MongoDB        PostgreSQL   PostgreSQL   SQLite            MySQL       sin base
+identidad_db  catalogo_db    reservas_db  prestamos_db mantenimiento.db  reportes_db
+```
+
+| Servicio | Tecnología | Responsabilidad | Tablas / colecciones |
+|---|---|---|---|
+| `api-gateway` | Java 21, Spring Cloud Gateway, Resilience4j | Punto único de entrada | — |
+| `servicio_identidad` | PHP 8.4 (Clean Architecture del monolito) | Login con JWT en cookie, sesiones, contraseñas, usuarios | `users`, `auth_sessions` |
+| `servicio_catalogo` | AdonisJS 7 + Mongoose | Equipos, imágenes, códigos y estado de cada unidad | `equipment`, `equipment_images`, `counters` |
+| `servicio_reservas` | NestJS 12 + pg | Solicitudes con horario y aprobación en 3 fases | `reservations`, `reservation_events` |
+| `servicio_prestamos` | Rust (Axum + SQLx) | Inicio y devolución con foto de evidencia | `loans`, `loan_photos` |
+| `servicio_mantenimiento` | Bun + Fastify + `bun:sqlite` | Revisión de equipos devueltos | `maintenance_reviews` |
+| `servicio_reportes` | Python FastAPI + Uvicorn + SQLAlchemy | Historial, exportación a Excel y bitácora central | `audit_logs` |
+| `servicio_notificaciones` | Go (net/http) | Avisos en tiempo real por SSE | — |
+
+### Decisiones de diseño
+
+- **Descomposición por dominio de negocio (DDD).** Cada servicio es un *bounded context* con su lógica, sus datos y su API (descomposición vertical). No se dividió por capas técnicas.
+- **Database per Service.** Ningún servicio lee la base de otro. Hay un servidor por motor (MySQL, PostgreSQL y MongoDB), pero cada servicio tiene su propia base y un usuario que solo puede entrar a ella. Las claves foráneas entre módulos pasaron a ser IDs que se validan por REST, y cada servicio guarda una copia de los datos que muestra (por ejemplo, el nombre del docente en la reserva).
+- **Comunicación REST con JSON**, como en la práctica (`servicio_factura` → cliente/producto). Las URL de los otros servicios van en variables de entorno.
+- **Seguridad centralizada en el gateway.** El gateway valida la cookie con Identidad y envía el usuario a cada servicio en las cabeceras `X-User-*`, firmadas con `X-Internal-Token`. Las rutas `/internal/**` no se exponen al navegador.
+- **Resiliencia.** Circuit Breaker y Retry en el gateway (Resilience4j), Circuit Breaker propio en Reservas → Catálogo/Identidad, timeouts en todas las llamadas y degradación controlada (si Catálogo no responde, Reservas muestra la copia local del equipo).
+- **Saga con compensación.** Al iniciar un préstamo, primero se guarda en `prestamos_db`, después Catálogo marca la unidad como prestada y, si algo falla, se compensa (`/release`). Mantenimiento hace lo mismo al habilitar una unidad.
+- **Consistencia eventual.** Préstamos informa a Reservas cuando inicia o termina un préstamo (con reintentos). Todos los servicios envían su bitácora a Reportes y sus avisos a Notificaciones.
+- **Composición de APIs.** Reportes arma el historial pidiendo datos a Catálogo, Préstamos, Reservas y Mantenimiento (reemplaza los JOIN del monolito). `GET /api/health` en el gateway agrega el estado de todos los servicios.
+
+### Migración con el patrón Strangler
+
+La migración se hizo por fases. En cada fase el gateway dejaba de enviar un módulo al monolito y lo enviaba al servicio nuevo, y el monolito siguió funcionando hasta quedar vacío:
+
+1. API Gateway delante del monolito
+2. Notificaciones (Go)
+3. Identidad (PHP)
+4. Catálogo (AdonisJS + MongoDB)
+5. Reservas (NestJS + PostgreSQL)
+6. Préstamos (Rust + PostgreSQL)
+7. Mantenimiento (Bun + SQLite)
+8. Reportes (FastAPI + MySQL)
+9. Retiro del monolito
+
+Cada fase está en su rama `feature/...` y en su merge a `develop`. Los datos del monolito se copian con la herramienta `migracion/`.
 
 ## Ejecutar
 
-Requisitos: Docker Desktop, Docker Compose y Node.js 24. Desde la raíz del proyecto:
+Requisitos: Docker Desktop y Node.js 24. Desde la raíz del proyecto:
 
 ```sh
 node docker/setup-env.mjs
 docker compose up --build -d
+docker compose --profile migracion run --rm migracion
 ```
 
-`setup-env.mjs` crea `.env` con claves aleatorias si no existe; nunca reemplaza la configuración actual. La aplicación está en [localhost:8088](http://localhost:8088) y phpMyAdmin en [localhost:8089](http://localhost:8089). MySQL acepta conexiones locales en `127.0.0.1:3307`; sus credenciales están en `.env`. Los puertos se pueden configurar allí.
+1. `setup-env.mjs` crea `.env` con claves aleatorias. Si `.env` ya existe, solo agrega las variables que falten.
+2. `up` construye y arranca los 7 servicios, el gateway, el frontend y las 3 bases. La primera vez tarda varios minutos porque compila Java, Rust y las imágenes de Node, Bun, Python, Go y PHP.
+3. `migracion` levanta la base del monolito con `migracion/legado/*.sql` y copia sus datos a la base de cada servicio. Solo copia si la base destino está vacía, así que se puede repetir sin duplicar datos.
 
-Para detener los contenedores conservando los datos:
+| Dirección | Para qué |
+|---|---|
+| [localhost:8088](http://localhost:8088) | Aplicación |
+| [localhost:3000](http://localhost:3000) | API Gateway (Postman) |
+| [localhost:3000/api/health](http://localhost:3000/api/health) | Estado de todos los microservicios |
+| [localhost:8089](http://localhost:8089) | phpMyAdmin (MySQL de Identidad y Reportes) |
 
-```sh
-docker compose down
-```
+Para detenerlo conservando los datos: `docker compose down`. Con `docker compose down -v` se borran las bases.
 
-La base de datos y las fotos están en el volumen Docker `mysql_data`, fuera de Git. No ejecutes `docker compose down -v` si quieres conservarlas.
+## Cuentas de desarrollo
+
+Después de la migración están las cuentas del monolito:
+
+- `administrador@demo.uniequipos.test` y `encargado@demo.uniequipos.test`, con contraseña `DemoEquipos2026!`.
+- El docente Kevin entra con `kevin.chuquitarco@demo.uniequipos.test` y `Inicio2026!`.
+- Cada estudiante usa su correo `@espe.edu.ec` y, como contraseña inicial, su usuario. Ejemplo: `avalegria@espe.edu.ec` / `avalegria`.
+
+## Ramas y flujo de trabajo
+
+| Rama | Entorno | Uso |
+|---|---|---|
+| `main` | Producción | Solo versiones probadas |
+| `test` | Pruebas | La tester prueba lo integrado antes de pasarlo a `main` |
+| `develop` | Desarrollo | Donde se integran los servicios terminados |
+| `feature/...` | — | Una rama por microservicio |
+
+El flujo es `feature/...` → `develop` → Pull Request a `test` (revisión y pruebas) → Pull Request a `main`. GitHub Actions prueba cada servicio por separado en cada push. La guía para probar está en [docs/GUIA_PRUEBAS.md](docs/GUIA_PRUEBAS.md) y la colección de Postman en [docs/postman](docs/postman).
 
 ## Estructura
 
 ```text
-PROGRAMA/
-├── backend/
-│   ├── src/
-│   │   ├── Domain/          Entidades y reglas de negocio
-│   │   ├── Application/     Casos de uso e interfaces de repositorio
-│   │   ├── Adapters/Http/   Controladores y entrada HTTP
-│   │   └── Infrastructure/ Implementaciones PDO, seguridad, fotos y Excel
-│   ├── database/schema.sql  Definición completa de las 11 tablas
-│   ├── database/data.sql    Datos exportados (sin sesiones de acceso)
-│   ├── bin/                Carga inicial y adaptación de cuentas
-│   │   └── fixtures/       Datos de ejemplo de esas cuentas y equipos
-│   ├── public/             Entrada de la API
-│   └── tests/              Pruebas existentes
-├── frontend/src/
-│   ├── domain/             Conceptos de la interfaz
-│   ├── application/        Operaciones de aplicación
-│   ├── infrastructure/     Cliente API y modo demo
-│   └── presentation/
-│       ├── modules/        Pantallas y componentes por función
-│       ├── components/     Piezas compartidas
-│       └── App.jsx         Navegación y composición
-├── docker/                 Configuración de Nginx, PHP y entorno local
-├── docs/openapi.yaml       Contrato de la API
-└── compose.yaml            Servicios de la aplicación
+PROGRAMAu2/
+├── api-gateway/               Spring Cloud Gateway
+├── servicio_identidad/        PHP 8.4
+├── servicio_catalogo/         AdonisJS + MongoDB
+├── servicio_reservas/         NestJS + PostgreSQL
+├── servicio_prestamos/        Rust + PostgreSQL
+├── servicio_mantenimiento/    Bun + Fastify + SQLite
+├── servicio_reportes/         Python FastAPI + MySQL
+├── servicio_notificaciones/   Go
+├── frontend/                  React 19 + Vite (sin cambios: las rutas /api se conservaron)
+├── migracion/                 Copia de datos del monolito (legado/ = esquema y datos exportados)
+├── docker/                    Nginx del frontend e inicialización de MySQL, PostgreSQL y MongoDB
+├── docs/                      Guía de pruebas, Postman y contrato OpenAPI
+└── compose.yaml
 ```
-
-Las reglas de negocio están en `Domain`. `Application` coordina esas reglas a través de interfaces; `Infrastructure` implementa el acceso a MySQL y otros detalles técnicos. Los controladores HTTP y React están en la parte externa. La autorización se verifica en el backend.
-
-`docker/` contiene los archivos necesarios para los contenedores. `backend/bin/` contiene comandos para instalar o adaptar cuentas. `schema.sql` reúne todas las tablas en su estado final. `data.sql` contiene los datos exportados, incluidas cuentas y evidencias fotográficas, sin sesiones de acceso. Se incluye en Git y se excluye del contexto de Docker. Los JSON de `fixtures/` siguen siendo datos iniciales de ejemplo.
-
-## Cuentas de desarrollo
-
-En una instalación nueva, después de arrancar Docker:
-
-```sh
-docker compose exec -e DEMO_PASSWORD='DemoEquipos2026!' api php bin/seed.php
-docker compose exec -e INITIAL_PASSWORD='Inicio2026!' api php bin/seed-course-users.php
-```
-
-Estas cargas crean únicamente registros faltantes. Las cuentas de demostración son `administrador@demo.uniequipos.test` y `encargado@demo.uniequipos.test`, con contraseña `DemoEquipos2026!`. El docente Kevin usa `kevin.chuquitarco@demo.uniequipos.test` y `Inicio2026!`.
-
-Cada estudiante usa como usuario la inicial del primer nombre, la inicial del segundo nombre y el primer apellido, en minúsculas. El correo añade `@espe.edu.ec` y la contraseña inicial es el mismo usuario. Ejemplo: `avalegria@espe.edu.ec` / `avalegria`. Las cuentas completas están en `backend/bin/fixtures/course-users.json`.
-
-Cada persona puede cambiar su contraseña desde **Mi perfil**. El administrador puede restablecer la clave inicial desde **Usuarios**; ambas acciones cierran las sesiones de la cuenta afectada.
-
-## Navegación y módulos
-
-Cada módulo tiene una URL directa: `/`, `/equipos`, `/reservas`, `/aprobaciones`, `/prestamos`, `/mantenimiento`, `/reportes`, `/usuarios` y `/perfil`. Puedes recargar, compartir enlaces y usar Atrás/Adelante. El menú solo muestra módulos autorizados para el rol y el backend mantiene sus controles de acceso.
-
-El catálogo registra una unidad física por código; estudiantes y docentes solicitan reservas con horario y docente responsable. Las aprobaciones siguen la fase docente, administrador y encargado. El préstamo registra foto al iniciar y devolver. La devolución pone el equipo en mantenimiento; la revisión con foto y comentario puede habilitarlo de nuevo. Reportes muestra el historial y exporta archivos Excel. Las vistas reciben actualizaciones por SSE.
-
-## Base existente y desarrollo local
-
-`schema.sql` se aplica automáticamente solo cuando el volumen MySQL está vacío. No modifica la base actual. Para restaurar los datos exportados sobre un esquema recién creado y vacío, ejecuta desde la raíz del proyecto: `docker compose exec -T db sh -c 'exec mysql -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' < backend/database/data.sql`. Hazlo antes de ejecutar las cargas iniciales de `backend/bin/` para no duplicar cuentas. La importación restaura los registros históricos de la fecha de exportación, sin sesiones de acceso. `bin/update-student-accounts.php` y `bin/configure-initial-passwords.php` quedan disponibles para adaptar instalaciones antiguas; en esta base local los cambios ya se aplicaron.
-
-Para desarrollar el frontend fuera de Docker, ejecuta `npm ci` y `npm run dev` dentro de `frontend/`. Vite usa la API en `localhost:8088`; ajusta `APP_ORIGIN` al puerto de Vite si necesitas iniciar sesión desde el servidor de desarrollo. `npm run demo` abre una vista previa independiente con datos en memoria.
-
-`node_modules`, `vendor`, `dist` y `.env` son archivos locales generados o privados y no se incluyen en Git. El repositorio conserva el código, los archivos de bloqueo de dependencias, las cargas iniciales, el esquema SQL y el script de datos.

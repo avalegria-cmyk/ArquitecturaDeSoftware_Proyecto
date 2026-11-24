@@ -1,32 +1,101 @@
-name: Pruebas del proyecto
+name: Pruebas de los microservicios
+# Integración continua: cada microservicio se prueba por separado, con su propio lenguaje.
 on: [push, pull_request]
+
 jobs:
   frontend:
+    name: Frontend (React)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
+    defaults: { run: { working-directory: frontend } }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
+        with: { node-version: '24', cache: npm, cache-dependency-path: frontend/package-lock.json }
       - run: npm ci
       - run: npm test
       - run: npm run build
-  backend:
+
+  gateway:
+    name: API Gateway (Spring Boot)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
+    defaults: { run: { working-directory: api-gateway } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21', cache: maven }
+      - run: mvn -B package
+
+  identidad:
+    name: Identidad (PHP)
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: servicio_identidad } }
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          extensions: pdo_mysql, mbstring, dom
-          coverage: none
+        with: { php-version: '8.4', extensions: pdo_mysql, coverage: none }
       - run: composer install --no-interaction --prefer-dist
       - run: composer test
+
+  catalogo:
+    name: Catálogo (AdonisJS)
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: servicio_catalogo } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24', cache: npm, cache-dependency-path: servicio_catalogo/package-lock.json }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node ace test
+
+  reservas:
+    name: Reservas (NestJS)
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: servicio_reservas } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24', cache: npm, cache-dependency-path: servicio_reservas/package-lock.json }
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  prestamos:
+    name: Préstamos (Rust)
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: servicio_prestamos } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test
+
+  mantenimiento:
+    name: Mantenimiento (Bun)
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: servicio_mantenimiento } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun test
+
+  reportes:
+    name: Reportes (FastAPI)
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: servicio_reportes } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q tests
+
+  notificaciones:
+    name: Notificaciones (Go)
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: servicio_notificaciones } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.25' }
+      - run: go test ./...
