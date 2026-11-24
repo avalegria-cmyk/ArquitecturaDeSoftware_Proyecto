@@ -150,7 +150,32 @@ def reservas(origen):
         print(f"reservas: {len(filas)} reservas y {len(eventos)} eventos copiados.")
 
 
-PASOS = [identidad, catalogo, reservas]
+def prestamos(origen):
+    with postgres(os.environ["PRESTAMOS_DATABASE_URL"]) as cx:
+        esperar_tabla_pg(cx, "loan_photos")
+        if cx.execute("SELECT COUNT(*) FROM loans").fetchone()[0]:
+            print("prestamos: ya tiene datos, se conserva.")
+            return
+        with origen.cursor() as src, cx.transaction():
+            src.execute("""SELECT l.*, r.requester_id, r.teacher_id, u.name AS requester_name FROM loans l
+                JOIN reservations r ON r.id = l.reservation_id JOIN users u ON u.id = r.requester_id ORDER BY l.id""")
+            filas = src.fetchall()
+            src.execute("SELECT * FROM loan_photos ORDER BY id")
+            fotos = src.fetchall()
+            for l in filas:
+                cx.execute("""INSERT INTO loans (id, reservation_id, equipment_id, requester_id, requester_name, teacher_id, started_at, returned_at)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""", (l["id"], l["reservation_id"], l["equipment_id"], l["requester_id"],
+                    l["requester_name"], l["teacher_id"], utc(l["started_at"]), utc(l["returned_at"])))
+            for f in fotos:
+                cx.execute("""INSERT INTO loan_photos (id, loan_id, phase, content, width, height, byte_size, created_at)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""", (f["id"], f["loan_id"], f["phase"], f["content"], f["width"],
+                    f["height"], f["byte_size"], utc(f["created_at"])))
+            for tabla in ("loans", "loan_photos"):
+                cx.execute(f"SELECT setval(pg_get_serial_sequence('{tabla}', 'id'), GREATEST((SELECT MAX(id) FROM {tabla}), 1))")
+        print(f"prestamos: {len(filas)} préstamos y {len(fotos)} fotos copiados.")
+
+
+PASOS = [identidad, catalogo, reservas, prestamos]
 
 if __name__ == "__main__":
     origen = monolito()

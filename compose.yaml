@@ -22,12 +22,26 @@ services:
       AUTH_URL: http://identidad:3001/internal/verify
       CATALOGO_URL: http://catalogo:3002
       RESERVAS_URL: http://reservas:3003
+      PRESTAMOS_URL: http://prestamos:3004
     depends_on:
       - monolito
       - notificaciones
       - identidad
       - catalogo
       - reservas
+      - prestamos
+  prestamos:
+    build: ./servicio_prestamos
+    environment:
+      DATABASE_URL: postgres://prestamos:${PRESTAMOS_DB_PASSWORD}@postgres:5432/prestamos_db
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
+      RESERVAS_URL: http://reservas:3003
+      CATALOGO_URL: http://catalogo:3002
+      NOTIFY_URL: http://notificaciones:3007/internal/events
+      RUST_LOG: info
+    depends_on:
+      postgres:
+        condition: service_healthy
   reservas:
     build: ./servicio_reservas
     environment:
@@ -121,6 +135,7 @@ services:
       IDENTIDAD_DB_PASSWORD: ${IDENTIDAD_DB_PASSWORD}
       CATALOGO_MONGO_URL: mongodb://catalogo:${CATALOGO_DB_PASSWORD}@mongo:27017/catalogo_db
       RESERVAS_DATABASE_URL: postgres://reservas:${RESERVAS_DB_PASSWORD}@postgres:5432/reservas_db
+      PRESTAMOS_DATABASE_URL: postgres://prestamos:${PRESTAMOS_DB_PASSWORD}@postgres:5432/prestamos_db
     depends_on:
       postgres:
         condition: service_healthy

@@ -29,6 +29,11 @@ export default class InternoController {
       'Esta unidad todavía no está disponible. Puede seguir en uso o estar en mantenimiento.')
   }
 
+  /** Compensación (saga): Préstamos no pudo guardar el inicio, la unidad vuelve a estar disponible. */
+  async release({ params }: HttpContext) {
+    return cambiar(Number(params.id), 'prestado', 'disponible', 'La unidad ya no está prestada.')
+  }
+
   /** Préstamos registra la devolución: la unidad pasa a revisión. */
   async returned({ params }: HttpContext) {
     const actual = await buscar(Number(params.id))
