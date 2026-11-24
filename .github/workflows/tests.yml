@@ -8,8 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: frontend } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: '24', cache: npm, cache-dependency-path: frontend/package-lock.json }
       - run: npm ci
       - run: npm test
@@ -20,17 +20,18 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: api-gateway } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with: { distribution: temurin, java-version: '21', cache: maven }
-      - run: mvn -B package
+      # Reintenta las descargas de Maven Central si la red falla.
+      - run: mvn -B package -Daether.connector.http.retryHandler.count=5 -Daether.connector.requestTimeout=60000
 
   identidad:
     name: Identidad (PHP)
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: servicio_identidad } }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with: { php-version: '8.4', extensions: pdo_mysql, coverage: none }
       - run: composer install --no-interaction --prefer-dist
@@ -41,8 +42,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: servicio_catalogo } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: '24', cache: npm, cache-dependency-path: servicio_catalogo/package-lock.json }
       - run: npm ci
       - run: npm run typecheck
@@ -53,8 +54,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: servicio_reservas } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: '24', cache: npm, cache-dependency-path: servicio_reservas/package-lock.json }
       - run: npm ci
       - run: npm test
@@ -65,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: servicio_prestamos } }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test
 
@@ -74,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: servicio_mantenimiento } }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun test
@@ -84,8 +85,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: servicio_reportes } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with: { python-version: '3.13' }
       - run: pip install -r requirements.txt
       - run: python -m pytest -q tests
@@ -95,7 +96,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: servicio_notificaciones } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with: { go-version: '1.25' }
       - run: go test ./...
