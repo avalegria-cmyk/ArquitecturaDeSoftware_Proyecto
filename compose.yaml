@@ -1,5 +1,15 @@
 name: uniequipos-micro
+
+# Arquitectura de microservicios de UniEquipos.
+# Navegador -> web (Nginx + React) -> gateway (Spring Boot) -> microservicios -> su propia base de datos.
+
+x-interno: &interno
+  INTERNAL_TOKEN: ${INTERNAL_TOKEN}
+  NOTIFY_URL: http://notificaciones:3007/internal/events
+  AUDIT_URL: http://reportes:3006/internal/audit
+
 services:
+  # Frontend React servido por Nginx; todo /api pasa al API Gateway.
   web:
     build:
       context: .
@@ -8,6 +18,8 @@ services:
       - "127.0.0.1:${APP_PORT:-8088}:80"
     depends_on:
       - gateway
+
+  # Punto único de entrada: enrutamiento, autenticación, límite de intentos, circuit breaker y logs.
   gateway:
     build: ./api-gateway
     ports:
@@ -15,30 +27,90 @@ services:
     environment:
       INTERNAL_TOKEN: ${INTERNAL_TOKEN}
       APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8088}
-      MONOLITO_URL: http://monolito
-      NOTIFICACIONES_URL: http://notificaciones:3007
-      IDENTIDAD_URL: http://identidad:3001
-      # El gateway valida cada sesión con el servicio de Identidad.
       AUTH_URL: http://identidad:3001/internal/verify
+      IDENTIDAD_URL: http://identidad:3001
       CATALOGO_URL: http://catalogo:3002
       RESERVAS_URL: http://reservas:3003
       PRESTAMOS_URL: http://prestamos:3004
       MANTENIMIENTO_URL: http://mantenimiento:3005
       REPORTES_URL: http://reportes:3006
+      NOTIFICACIONES_URL: http://notificaciones:3007
     depends_on:
-      - monolito
-      - notificaciones
       - identidad
       - catalogo
       - reservas
       - prestamos
       - mantenimiento
       - reportes
+      - notificaciones
+
+  # 3001 · PHP 8.4 · MySQL identidad_db
+  identidad:
+    build: ./servicio_identidad
+    environment:
+      <<: *interno
+      DB_HOST: mysql
+      DB_NAME: identidad_db
+      DB_USER: identidad
+      DB_PASSWORD: ${IDENTIDAD_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      COOKIE_SECURE: ${COOKIE_SECURE:-0}
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # 3002 · AdonisJS · MongoDB catalogo_db
+  catalogo:
+    build: ./servicio_catalogo
+    environment:
+      <<: *interno
+      APP_KEY: ${CATALOGO_APP_KEY}
+      APP_URL: http://catalogo:3002
+      MONGO_URL: mongodb://catalogo:${CATALOGO_DB_PASSWORD}@mongo:27017/catalogo_db
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  # 3003 · NestJS · PostgreSQL reservas_db
+  reservas:
+    build: ./servicio_reservas
+    environment:
+      <<: *interno
+      DATABASE_URL: postgres://reservas:${RESERVAS_DB_PASSWORD}@postgres:5432/reservas_db
+      CATALOGO_URL: http://catalogo:3002
+      IDENTIDAD_URL: http://identidad:3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # 3004 · Rust (Axum + SQLx) · PostgreSQL prestamos_db
+  prestamos:
+    build: ./servicio_prestamos
+    environment:
+      <<: *interno
+      DATABASE_URL: postgres://prestamos:${PRESTAMOS_DB_PASSWORD}@postgres:5432/prestamos_db
+      RESERVAS_URL: http://reservas:3003
+      CATALOGO_URL: http://catalogo:3002
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # 3005 · Bun + Fastify · SQLite (archivo en su propio volumen)
+  mantenimiento:
+    build: ./servicio_mantenimiento
+    environment:
+      <<: *interno
+      CATALOGO_URL: http://catalogo:3002
+      PRESTAMOS_URL: http://prestamos:3004
+    volumes:
+      - micro_mantenimiento_data:/data
+
+  # 3006 · Python FastAPI + Uvicorn · MySQL reportes_db (bitácora central)
   reportes:
     build: ./servicio_reportes
     environment:
-      DATABASE_URL: mysql+pymysql://reportes:${REPORTES_DB_PASSWORD}@mysql:3306/reportes_db
       INTERNAL_TOKEN: ${INTERNAL_TOKEN}
+      DATABASE_URL: mysql+pymysql://reportes:${REPORTES_DB_PASSWORD}@mysql:3306/reportes_db
       CATALOGO_URL: http://catalogo:3002
       RESERVAS_URL: http://reservas:3003
       PRESTAMOS_URL: http://prestamos:3004
@@ -46,99 +118,14 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-  mantenimiento:
-    build: ./servicio_mantenimiento
+
+  # 3007 · Go · sin base de datos (SSE en tiempo real)
+  notificaciones:
+    build: ./servicio_notificaciones
     environment:
       INTERNAL_TOKEN: ${INTERNAL_TOKEN}
-      CATALOGO_URL: http://catalogo:3002
-      PRESTAMOS_URL: http://prestamos:3004
-      NOTIFY_URL: http://notificaciones:3007/internal/events
-      AUDIT_URL: http://reportes:3006/internal/audit
-    # SQLite: la base es un archivo dentro de este volumen, solo de este servicio.
-    volumes:
-      - micro_mantenimiento_data:/data
-  prestamos:
-    build: ./servicio_prestamos
-    environment:
-      DATABASE_URL: postgres://prestamos:${PRESTAMOS_DB_PASSWORD}@postgres:5432/prestamos_db
-      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
-      RESERVAS_URL: http://reservas:3003
-      CATALOGO_URL: http://catalogo:3002
-      NOTIFY_URL: http://notificaciones:3007/internal/events
-      AUDIT_URL: http://reportes:3006/internal/audit
-      RUST_LOG: info
-    depends_on:
-      postgres:
-        condition: service_healthy
-  reservas:
-    build: ./servicio_reservas
-    environment:
-      DATABASE_URL: postgres://reservas:${RESERVAS_DB_PASSWORD}@postgres:5432/reservas_db
-      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
-      CATALOGO_URL: http://catalogo:3002
-      IDENTIDAD_URL: http://identidad:3001
-      NOTIFY_URL: http://notificaciones:3007/internal/events
-      AUDIT_URL: http://reportes:3006/internal/audit
-    depends_on:
-      postgres:
-        condition: service_healthy
-  # PostgreSQL de los microservicios: reservas_db y prestamos_db.
-  postgres:
-    image: postgres:18-alpine
-    environment:
-      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
-      RESERVAS_DB_PASSWORD: ${RESERVAS_DB_PASSWORD}
-      PRESTAMOS_DB_PASSWORD: ${PRESTAMOS_DB_PASSWORD}
-    volumes:
-      - micro_postgres_data:/var/lib/postgresql
-      - ./docker/postgres/01-bases.sh:/docker-entrypoint-initdb.d/01-bases.sh:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 30
-  catalogo:
-    build: ./servicio_catalogo
-    environment:
-      APP_KEY: ${CATALOGO_APP_KEY}
-      APP_URL: http://catalogo:3002
-      MONGO_URL: mongodb://catalogo:${CATALOGO_DB_PASSWORD}@mongo:27017/catalogo_db
-      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
-      NOTIFY_URL: http://notificaciones:3007/internal/events
-      AUDIT_URL: http://reportes:3006/internal/audit
-    depends_on:
-      mongo:
-        condition: service_healthy
-  # MongoDB de los microservicios: catalogo_db.
-  mongo:
-    image: mongo:8
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      CATALOGO_DB_PASSWORD: ${CATALOGO_DB_PASSWORD}
-    volumes:
-      - micro_mongo_data:/data/db
-      - ./docker/mongo/01-usuario.js:/docker-entrypoint-initdb.d/01-usuario.js:ro
-    healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
-      interval: 5s
-      timeout: 5s
-      retries: 30
-  identidad:
-    build: ./servicio_identidad
-    environment:
-      DB_HOST: mysql
-      DB_NAME: identidad_db
-      DB_USER: identidad
-      DB_PASSWORD: ${IDENTIDAD_DB_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      COOKIE_SECURE: ${COOKIE_SECURE:-0}
-      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
-      AUDIT_URL: http://reportes:3006/internal/audit
-    depends_on:
-      mysql:
-        condition: service_healthy
-  # MySQL de los microservicios: identidad_db y reportes_db, cada una con su propio usuario.
+
+  # --- Bases de datos: un servidor por motor, una base y un usuario por servicio ---
   mysql:
     image: mysql:8.4
     environment:
@@ -153,12 +140,75 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
-  # Copia una sola vez los datos del monolito a las bases nuevas (se puede repetir sin duplicar).
+
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
+      RESERVAS_DB_PASSWORD: ${RESERVAS_DB_PASSWORD}
+      PRESTAMOS_DB_PASSWORD: ${PRESTAMOS_DB_PASSWORD}
+    volumes:
+      - micro_postgres_data:/var/lib/postgresql
+      - ./docker/postgres/01-bases.sh:/docker-entrypoint-initdb.d/01-bases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  mongo:
+    image: mongo:8
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      CATALOGO_DB_PASSWORD: ${CATALOGO_DB_PASSWORD}
+    volumes:
+      - micro_mongo_data:/data/db
+      - ./docker/mongo/01-usuario.js:/docker-entrypoint-initdb.d/01-usuario.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # phpMyAdmin para revisar las bases MySQL de los microservicios (entrar con el usuario de cada servicio).
+  phpmyadmin:
+    image: phpmyadmin:latest
+    ports:
+      - "127.0.0.1:${PMA_PORT:-8089}:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # --- Migración de datos del monolito (solo con: docker compose --profile migracion run --rm migracion) ---
+  # Base MySQL del monolito, cargada con el esquema y los datos exportados.
+  legado:
+    profiles: ["migracion"]
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - legado_data:/var/lib/mysql
+      - ./migracion/legado:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root --password=$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
+  # Copia los datos del monolito a la base de cada servicio (solo si esa base está vacía).
   migracion:
+    profiles: ["migracion"]
     build: ./migracion
     restart: "no"
     environment:
-      LEGACY_DB_HOST: db
+      LEGACY_DB_HOST: legado
       LEGACY_DB_NAME: ${MYSQL_DATABASE}
       LEGACY_DB_USER: ${MYSQL_USER}
       LEGACY_DB_PASSWORD: ${MYSQL_PASSWORD}
@@ -172,76 +222,18 @@ services:
     volumes:
       - micro_mantenimiento_data:/mantenimiento
     depends_on:
-      postgres:
-        condition: service_healthy
-      db:
+      legado:
         condition: service_healthy
       mysql:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
       mongo:
         condition: service_healthy
-      identidad:
-        condition: service_started
-  notificaciones:
-    build: ./servicio_notificaciones
-    environment:
-      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
-  # Monolito original: sigue atendiendo lo que todavía no se migró (patrón Strangler).
-  monolito:
-    image: nginx:stable-alpine
-    volumes:
-      - ./docker/monolito/default.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - api
-  api:
-    build:
-      context: .
-      dockerfile: docker/php/Dockerfile
-    environment:
-      DB_HOST: db
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      COOKIE_SECURE: ${COOKIE_SECURE:-0}
-      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8088}
-      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
-      NOTIFICACIONES_URL: http://notificaciones:3007/internal/events
-    depends_on:
-      db:
-        condition: service_healthy
-  phpmyadmin:
-    image: phpmyadmin:latest
-    ports:
-      - "127.0.0.1:${PMA_PORT:-8089}:80"
-    environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-      PMA_USER: ${MYSQL_USER}
-      PMA_PASSWORD: ${MYSQL_PASSWORD}
-    depends_on:
-      db:
-        condition: service_healthy
-  db:
-    image: mysql:8.4
-    ports:
-      - "127.0.0.1:${DB_PORT:-3307}:3306"
-    environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root --password=$$MYSQL_ROOT_PASSWORD --silent"]
-      interval: 5s
-      timeout: 5s
-      retries: 30
+
 volumes:
-  mysql_data:
   micro_mysql_data:
   micro_mongo_data:
   micro_postgres_data:
   micro_mantenimiento_data:
+  legado_data:

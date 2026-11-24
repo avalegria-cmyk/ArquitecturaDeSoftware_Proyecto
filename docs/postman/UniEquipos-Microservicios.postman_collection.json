@@ -1,0 +1,1817 @@
+{
+  "info": {
+    "name": "UniEquipos · Microservicios",
+    "_postman_id": "18fef0d6-bd24-4f79-adf5-f5a0c4b9b6be",
+    "description": "Pruebas de los 7 microservicios a través del API Gateway (http://localhost:3000). Ejecutar las carpetas en orden con el Collection Runner. Postman guarda la cookie de sesión uni_session automáticamente.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "fotoBase64",
+      "value": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA0JCgsKCA0LCgsODg0PEyAVExISEyccHhcgLikxMC4pLSwzOko+MzZGNywtQFdBRkxOUlNSMj5aYVpQYEpRUk//2wBDAQ4ODhMREyYVFSZPNS01T09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0//wAARCAHgAoADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDAooooOIKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiig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ooAKKKKACiiigAooooAK7L4ff8xD/tn/AOzVxtdl8Pv+Yh/2z/8AZqC6fxIPiD/zD/8Atp/7LXG12XxB/wCYf/20/wDZa42gKnxMKKKKCAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACum8B/8AIam/69m/9CWuZrpvAf8AyGpv+vZv/QloKh8SNnx5/wAgWH/r5X/0Fq4Cu/8AHn/IFh/6+V/9BauAoKq/EFFFFBmFFFFABRRRQAUUUUAFFFFABRRRQAV2Xw+/5iH/AGz/APZq42uy+H3/ADEP+2f/ALNQXT+JB8Qf+Yf/ANtP/Za42uy+IP8AzD/+2n/stcbQFT4mFFFFBAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABXTeA/8AkNTf9ezf+hLXM103gP8A5DU3/Xs3/oS0FQ+JGz48/wCQLD/18r/6C1cBXf8Ajz/kCw/9fK/+gtXAUFVfiCiiigzCiiigAooooAKKKKACiiigAooooAK7L4ff8xD/ALZ/+zVxtdl8Pv8AmIf9s/8A2agun8SD4g/8w/8A7af+y1xtdl8Qf+Yf/wBtP/Za42gKnxMKKKKCAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACum8B/wDIam/69m/9CWuZrpvAf/Iam/69m/8AQloKh8SNnx5/yBYf+vlf/QWrgK7/AMef8gWH/r5X/wBBauAoKq/EFFFFBmFFFFABRRRQAUUUUAFFFFABRRRQAV2Xw+/5iH/bP/2auNrsvh9/zEP+2f8A7NQXT+JB8Qf+Yf8A9tP/AGWuNrsviD/zD/8Atp/7LXG0BU+JhRRRQQFFFFAB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ezf+hLXM103gP/kNTf8AXs3/AKEtBUPiRs+PP+QLD/18r/6C1cBXf+PP+QLD/wBfK/8AoLVwFBVX4gooooMwooooAKKKKACiiigAooooAKKKKACuy+H3/MQ/7Z/+zVxtdl8Pv+Yh/wBs/wD2agun8SD4g/8AMP8A+2n/ALLXG12XxB/5h/8A20/9lrjaAqfEwooooICiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAK6bwH/yGpv+vZv/AEJa5mum8B/8hqb/AK9m/wDQloKh8SNnx5/yBYf+vlf/AEFq4Cu/8ef8gWH/AK+V/wDQWrgKCqvxBRRRQZhRRRQAUUUUAFFFFABRRRQAUUUUAFdl8Pv+Yh/2z/8AZq42uy+H3/MQ/wC2f/s1BdP4kHxB/wCYf/20/wDZa42uy+IP/MP/AO2n/stcbQFT4mFFFFBAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABXTeA/+Q1N/wBezf8AoS1zNdN4D/5DU3/Xs3/oS0FQ+JGz48/5AsP/AF8r/wCgtXAV3/jz/kCw/wDXyv8A6C1cBQVV+IKKKKDMKKKKACiiigAooooAKKKKACiiigArsvh9/wAxD/tn/wCzVxtdl8Pv+Yh/2z/9moLp/Eg+IP8AzD/+2n/stcbXZfEH/mH/APbT/wBlrjaAqfEwooooICiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAK6bwH/yGpv8Ar2b/ANCWuZrpvAf/ACGpv+vZv/QloKh8SNnx5/yBYf8Ar5X/ANBauArv/Hn/ACBYf+vlf/QWrgKCqvxBRRRQZhRRRQAUUUUAFFFFABRR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q+nR29tHOrrKHJkUAYwR2J9a5iiigiUm3dhRRRQIKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD/2Q=="
+    },
+    {
+      "key": "equipoId",
+      "value": ""
+    },
+    {
+      "key": "reservaId",
+      "value": ""
+    },
+    {
+      "key": "loanId",
+      "value": ""
+    },
+    {
+      "key": "docenteId",
+      "value": "9"
+    },
+    {
+      "key": "requestKey",
+      "value": ""
+    },
+    {
+      "key": "inicioReserva",
+      "value": "2027-01-15T08:00"
+    },
+    {
+      "key": "finReserva",
+      "value": "2027-01-15T10:00"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. API Gateway",
+      "item": [
+        {
+          "name": "Estado de todos los servicios",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/health",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Los 7 servicios responden', () => pm.expect(Object.keys(pm.response.json().services)).to.have.length(7));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin sesión → 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/equipment",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "equipment"
+              ]
+            },
+            "description": "El gateway valida la cookie con Identidad antes de enrutar."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ruta interna bloqueada → 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/internal/equipment",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "internal",
+                "equipment"
+              ]
+            },
+            "description": "Las rutas /internal solo se usan entre microservicios."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Identidad (PHP + MySQL)",
+      "item": [
+        {
+          "name": "Login con clave incorrecta → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/auth/login",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"administrador@demo.uniequipos.test\",\n  \"password\": \"incorrecta\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/auth/login",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"administrador@demo.uniequipos.test\",\n  \"password\": \"DemoEquipos2026!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve el usuario sin la contraseña', () => pm.expect(pm.response.json().user).to.not.have.property('passwordHash'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Usuario actual",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/auth/me",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Rol administrador', () => pm.expect(pm.response.json().user.role).to.eql('administrador'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lista de usuarios",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/users",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cambiar contraseña con la actual incorrecta → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/auth/password",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"x\",\n  \"newPassword\": \"NuevaClave123\",\n  \"confirmation\": \"NuevaClave123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Catálogo (AdonisJS + MongoDB)",
+      "item": [
+        {
+          "name": "Listar equipos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/equipment",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "equipment"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear equipo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/equipment",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "equipment"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Proyector Postman\",\n  \"category\": \"Proyectores\",\n  \"status\": \"disponible\",\n  \"location\": \"Laboratorio 1\",\n  \"description\": \"Creado desde Postman\",\n  \"photos\": [\n    \"{{fotoBase64}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('equipoId', pm.response.json().equipment.id);\npm.test('Código automático PRO-xxx', () => pm.expect(pm.response.json().equipment.code).to.match(/^PRO-\\d{3}$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Campos vacíos → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/equipment",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "equipment"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"category\": \"Proyectores\",\n  \"status\": \"disponible\",\n  \"location\": \"L\",\n  \"description\": \"D\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estado prestado desde el catálogo → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/equipment/update",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "equipment",
+                "update"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{equipoId}},\n  \"name\": \"Proyector Postman\",\n  \"category\": \"Proyectores\",\n  \"status\": \"prestado\",\n  \"location\": \"Laboratorio 1\",\n  \"description\": \"x\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Modificar equipo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/equipment/update",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "equipment",
+                "update"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{equipoId}},\n  \"name\": \"Proyector Postman editado\",\n  \"category\": \"Proyectores\",\n  \"status\": \"disponible\",\n  \"location\": \"Laboratorio 2\",\n  \"description\": \"Editado desde Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Reservas (NestJS + PostgreSQL)",
+      "item": [
+        {
+          "name": "Login estudiante",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/auth/login",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"avalegria@espe.edu.ec\",\n  \"password\": \"avalegria\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve el usuario sin la contraseña', () => pm.expect(pm.response.json().user).to.not.have.property('passwordHash'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Docentes responsables",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/reservations/teachers",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "teachers"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Disponibilidad en un horario",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/reservations/availability?startsAt={{inicioReserva}}&endsAt={{finReserva}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "startsAt",
+                  "value": "{{inicioReserva}}"
+                },
+                {
+                  "key": "endsAt",
+                  "value": "{{finReserva}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear reserva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/reservations",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"equipmentId\": {{equipoId}},\n  \"teacherId\": {{docenteId}},\n  \"startsAt\": \"{{inicioReserva}}\",\n  \"endsAt\": \"{{finReserva}}\",\n  \"purpose\": \"Prueba desde Postman\",\n  \"requestKey\": \"{{requestKey}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('requestKey', require('uuid').v4());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('reservaId', pm.response.json().reservation.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mismo horario otra vez → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/reservations",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"equipmentId\": {{equipoId}},\n  \"teacherId\": {{docenteId}},\n  \"startsAt\": \"{{inicioReserva}}\",\n  \"endsAt\": \"{{finReserva}}\",\n  \"purpose\": \"Choque\",\n  \"requestKey\": \"00000000-0000-0000-0000-000000000001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mis reservas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/reservations",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estudiante no aprueba → 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/approvals",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "approvals"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login docente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/auth/login",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"kevin.chuquitarco@demo.uniequipos.test\",\n  \"password\": \"Inicio2026!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve el usuario sin la contraseña', () => pm.expect(pm.response.json().user).to.not.have.property('passwordHash'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Docente aprueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/approvals/decision",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "approvals",
+                "decision"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationId\": {{reservaId}},\n  \"step\": \"docente\",\n  \"outcome\": \"completado\",\n  \"note\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login administrador (jefe de laboratorio)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/auth/login",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"administrador@demo.uniequipos.test\",\n  \"password\": \"DemoEquipos2026!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve el usuario sin la contraseña', () => pm.expect(pm.response.json().user).to.not.have.property('passwordHash'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Jefe de laboratorio aprueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/approvals/decision",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "approvals",
+                "decision"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationId\": {{reservaId}},\n  \"step\": \"jefe_laboratorio\",\n  \"outcome\": \"completado\",\n  \"note\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login encargado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/auth/login",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"encargado@demo.uniequipos.test\",\n  \"password\": \"DemoEquipos2026!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve el usuario sin la contraseña', () => pm.expect(pm.response.json().user).to.not.have.property('passwordHash'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Encargado aprueba → aceptado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/approvals/decision",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "approvals",
+                "decision"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationId\": {{reservaId}},\n  \"step\": \"encargado_laboratorio\",\n  \"outcome\": \"completado\",\n  \"note\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Reserva aceptada', () => pm.expect(pm.response.json().reservation.status).to.eql('aceptado'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Préstamos (Rust + PostgreSQL)",
+      "item": [
+        {
+          "name": "Login administrador (modo prueba)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/auth/login",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"administrador@demo.uniequipos.test\",\n  \"password\": \"DemoEquipos2026!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve el usuario sin la contraseña', () => pm.expect(pm.response.json().user).to.not.have.property('passwordHash'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Devolver sin iniciar → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/loans/return",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "loans",
+                "return"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationId\": {{reservaId}},\n  \"photo\": \"{{fotoBase64}}\",\n  \"completeDeviceConfirmed\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Iniciar préstamo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/loans/start",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "loans",
+                "start"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationId\": {{reservaId}},\n  \"photo\": \"{{fotoBase64}}\",\n  \"completeDeviceConfirmed\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Saga: guarda el préstamo y Catálogo marca la unidad como prestada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('En uso', () => pm.expect(pm.response.json().loan.state).to.eql('en_uso'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lista de préstamos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/loans",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "loans"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Foto de inicio",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/loans/{{reservaId}}/photos/inicio",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "loans",
+                "{{reservaId}}",
+                "photos",
+                "inicio"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Es JPEG', () => pm.expect(pm.response.headers.get('Content-Type')).to.eql('image/jpeg'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Devolver préstamo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/loans/return",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "loans",
+                "return"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationId\": {{reservaId}},\n  \"photo\": \"{{fotoBase64}}\",\n  \"completeDeviceConfirmed\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelto', () => pm.expect(pm.response.json().loan.state).to.eql('devuelto'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Mantenimiento (Bun + SQLite)",
+      "item": [
+        {
+          "name": "Equipos en revisión",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/maintenance",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "maintenance"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const e = pm.response.json().equipment.find(x => x.id == pm.collectionVariables.get('equipoId'));\npm.test('El equipo devuelto está en revisión', () => pm.expect(e).to.exist);\nif (e) pm.collectionVariables.set('loanId', e.loanId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Completar revisión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/maintenance/complete",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "maintenance",
+                "complete"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"equipmentId\": {{equipoId}},\n  \"loanId\": {{loanId}},\n  \"comments\": \"Revisado desde Postman, en buen estado\",\n  \"photo\": \"{{fotoBase64}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Historial de revisiones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/maintenance/reviews",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "maintenance",
+                "reviews"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Reportes (FastAPI + MySQL)",
+      "item": [
+        {
+          "name": "Reporte general",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/reports",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "reports"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte del equipo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/reports?equipmentId={{equipoId}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "reports"
+              ],
+              "query": [
+                {
+                  "key": "equipmentId",
+                  "value": "{{equipoId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Un préstamo y una revisión', () => { const d = pm.response.json(); pm.expect(d.equipment[0].totalLoans).to.eql(1); pm.expect(d.equipment[0].totalReviews).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Exportar Excel",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/reports/export",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "export"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Equipo inexistente → 422",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/reports?equipmentId=99999",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "reports"
+              ],
+              "query": [
+                {
+                  "key": "equipmentId",
+                  "value": "99999"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Limpieza",
+      "item": [
+        {
+          "name": "Deshabilitar equipo de prueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/equipment/disable",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "equipment",
+                "disable"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{equipoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cerrar sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Requested-With",
+                "value": "UniEquipos"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/api/auth/logout",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
