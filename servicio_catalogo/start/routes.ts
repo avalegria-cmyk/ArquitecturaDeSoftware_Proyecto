@@ -24,6 +24,7 @@ router
     router.get('/', [InternoController, 'index'])
     router.get('/:id', [InternoController, 'show'])
     router.post('/:id/loaned', [InternoController, 'loaned'])
+    router.post('/:id/release', [InternoController, 'release'])
     router.post('/:id/returned', [InternoController, 'returned'])
     router.post('/:id/available', [InternoController, 'available'])
   })

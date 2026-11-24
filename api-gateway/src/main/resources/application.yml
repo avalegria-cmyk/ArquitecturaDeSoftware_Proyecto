@@ -54,6 +54,16 @@ spring:
                   args:
                     name: reservas
                     fallbackUri: forward:/fallback
+            # Fase 6: Préstamos (Rust + PostgreSQL prestamos_db).
+            - id: prestamos
+              uri: ${PRESTAMOS_URL:http://prestamos:3004}
+              predicates:
+                - Path=/api/loans,/api/loans/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: prestamos
+                    fallbackUri: forward:/fallback
             - id: monolito
               uri: ${MONOLITO_URL:http://monolito}
               predicates:
