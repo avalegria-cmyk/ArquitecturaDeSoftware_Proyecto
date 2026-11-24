@@ -21,11 +21,39 @@ services:
       # El gateway valida cada sesión con el servicio de Identidad.
       AUTH_URL: http://identidad:3001/internal/verify
       CATALOGO_URL: http://catalogo:3002
+      RESERVAS_URL: http://reservas:3003
     depends_on:
       - monolito
       - notificaciones
       - identidad
       - catalogo
+      - reservas
+  reservas:
+    build: ./servicio_reservas
+    environment:
+      DATABASE_URL: postgres://reservas:${RESERVAS_DB_PASSWORD}@postgres:5432/reservas_db
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
+      CATALOGO_URL: http://catalogo:3002
+      IDENTIDAD_URL: http://identidad:3001
+      NOTIFY_URL: http://notificaciones:3007/internal/events
+    depends_on:
+      postgres:
+        condition: service_healthy
+  # PostgreSQL de los microservicios: reservas_db y prestamos_db.
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
+      RESERVAS_DB_PASSWORD: ${RESERVAS_DB_PASSWORD}
+      PRESTAMOS_DB_PASSWORD: ${PRESTAMOS_DB_PASSWORD}
+    volumes:
+      - micro_postgres_data:/var/lib/postgresql
+      - ./docker/postgres/01-bases.sh:/docker-entrypoint-initdb.d/01-bases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
   catalogo:
     build: ./servicio_catalogo
     environment:
@@ -92,7 +120,10 @@ services:
       MICRO_MYSQL_HOST: mysql
       IDENTIDAD_DB_PASSWORD: ${IDENTIDAD_DB_PASSWORD}
       CATALOGO_MONGO_URL: mongodb://catalogo:${CATALOGO_DB_PASSWORD}@mongo:27017/catalogo_db
+      RESERVAS_DATABASE_URL: postgres://reservas:${RESERVAS_DB_PASSWORD}@postgres:5432/reservas_db
     depends_on:
+      postgres:
+        condition: service_healthy
       db:
         condition: service_healthy
       mysql:
@@ -162,3 +193,4 @@ volumes:
   mysql_data:
   micro_mysql_data:
   micro_mongo_data:
+  micro_postgres_data:
