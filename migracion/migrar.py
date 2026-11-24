@@ -7,7 +7,10 @@ base destino está vacía, así se puede ejecutar muchas veces sin duplicar nada
 import os
 import time
 
+import re
+
 import pymysql
+from pymongo import MongoClient
 
 
 def esperar(conectar, descripcion, intentos=60):
@@ -55,7 +58,46 @@ def identidad(origen):
         print(f"identidad: {len(filas)} usuarios copiados.")
 
 
-PASOS = [identidad]
+def catalogo(origen):
+    cliente = esperar(lambda: _ping(MongoClient(os.environ["CATALOGO_MONGO_URL"], serverSelectionTimeoutMS=3000)), "MongoDB")
+    db = cliente.get_default_database()
+    if db.equipment.count_documents({}):
+        print("catalogo: ya tiene datos, se conserva.")
+        return
+    with origen.cursor() as src:
+        src.execute("SELECT * FROM equipment ORDER BY id")
+        equipos = src.fetchall()
+        src.execute("SELECT id, equipment_id, content, created_at FROM equipment_images ORDER BY id")
+        imagenes = src.fetchall()
+        src.execute("SELECT prefix, last_number FROM equipment_code_sequences")
+        secuencias = {f["prefix"]: f["last_number"] for f in src.fetchall()}
+    if equipos:
+        db.equipment.insert_many([{"id": e["id"], "code": e["code"], "name": e["name"], "category": e["category"],
+                                   "status": e["status"], "location": e["location"], "description": e["description"],
+                                   "createdAt": e["created_at"]} for e in equipos])
+    if imagenes:
+        db.equipment_images.insert_many([{"id": i["id"], "equipmentId": i["equipment_id"], "content": i["content"],
+                                          "createdAt": i["created_at"]} for i in imagenes])
+    # Contadores: el siguiente id y el siguiente correlativo de cada prefijo de código.
+    for e in equipos:
+        coincide = re.fullmatch(r"([A-Z]+)-(\d+)", e["code"])
+        if coincide:
+            prefijo, numero = coincide.group(1), int(coincide.group(2))
+            secuencias[prefijo] = max(secuencias.get(prefijo, 0), numero)
+    contadores = {"equipment": max((e["id"] for e in equipos), default=0),
+                  "image": max((i["id"] for i in imagenes), default=0)}
+    contadores.update({f"code:{p}": n for p, n in secuencias.items()})
+    for nombre, valor in contadores.items():
+        db.counters.update_one({"_id": nombre}, {"$max": {"seq": valor}}, upsert=True)
+    print(f"catalogo: {len(equipos)} equipos y {len(imagenes)} imágenes copiados.")
+
+
+def _ping(cliente):
+    cliente.admin.command("ping")
+    return cliente
+
+
+PASOS = [identidad, catalogo]
 
 if __name__ == "__main__":
     origen = monolito()
