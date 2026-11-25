@@ -3,6 +3,7 @@ mod auth;
 mod clientes;
 mod db;
 mod error;
+mod eventos;
 mod foto;
 mod politica;
 mod rutas;
@@ -20,6 +21,7 @@ use sqlx::{PgPool, postgres::PgPoolOptions};
 pub struct Estado {
     pub pool: PgPool,
     pub clientes: clientes::Clientes,
+    pub eventos: eventos::Eventos,
     pub token: String,
 }
 
@@ -45,7 +47,7 @@ async fn main() {
     tracing_subscriber::fmt().with_target(false).init();
     let token = std::env::var("INTERNAL_TOKEN").expect("Configura INTERNAL_TOKEN");
     let pool = conectar(&std::env::var("DATABASE_URL").expect("Configura DATABASE_URL")).await;
-    let estado = Arc::new(Estado { pool, clientes: clientes::Clientes::desde_entorno(token.clone()), token });
+    let estado = Arc::new(Estado { pool, clientes: clientes::Clientes::desde_entorno(token.clone()), eventos: eventos::Eventos::desde_entorno(), token });
 
     let app = Router::new()
         .route("/api/loans", get(rutas::listar))

@@ -7,7 +7,7 @@ import { puedeGestionarEquipos, type Usuario } from '#middleware/usuario_middlew
 import { siguienteCodigo } from '#services/codigo_equipo'
 import { decodificar, prepararFoto } from '#services/foto'
 import { estadoDeshabilitado, siguienteEstado } from '#services/estado_equipo'
-import { auditar, notificar } from '#services/eventos'
+import { publicar } from '#services/eventos'
 import { validarAlta, validarEdicion, validarId } from '#validators/equipo'
 
 const imagenUrl = (id: number) => ({ id, url: `/api/equipment/images/${id}` })
@@ -62,8 +62,7 @@ export default class EquiposController {
       await Equipo.deleteOne({ id: equipo.id })
       throw error
     }
-    auditar(usuario.id, `equipment.created:${equipo.id}`)
-    notificar()
+    publicar(`equipment.created:${equipo.id}`, usuario.id)
     return response.status(201).send({ equipment: { ...publico(equipo.toObject() as EquipoDoc), images: [] } })
   }
 
@@ -90,8 +89,7 @@ export default class EquiposController {
     if (cambio.matchedCount === 0) throw conflicto('La unidad cambió mientras la editabas. Actualiza el catálogo y vuelve a intentarlo.')
     if (quitar.length) await Imagen.deleteMany({ equipmentId: actual.id, id: { $in: quitar } })
     await guardarFotos(actual.id, preparadas)
-    auditar(usuario.id, `equipment.updated:${actual.id}`)
-    notificar()
+    publicar(`equipment.updated:${actual.id}`, usuario.id)
     return { message: 'Equipo modificado.' }
   }
 
@@ -105,8 +103,7 @@ export default class EquiposController {
     if (estado !== actual.status) {
       const cambio = await Equipo.updateOne({ id, status: actual.status }, { $set: { status: estado } })
       if (cambio.matchedCount === 0) throw conflicto('La unidad cambió mientras la editabas. Actualiza el catálogo y vuelve a intentarlo.')
-      auditar(usuario.id, `equipment.disabled:${id}`)
-      notificar()
+      publicar(`equipment.disabled:${id}`, usuario.id)
     }
     return { message: 'Equipo deshabilitado. Su historial se conserva.' }
   }

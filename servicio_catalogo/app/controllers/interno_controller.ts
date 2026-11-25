@@ -2,7 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import { Equipo, publico, type EquipoDoc, type Estado } from '#models/equipo'
 import { conflicto, noEncontrado } from '#exceptions/errores'
 import { estadoTrasDevolucion } from '#services/estado_equipo'
-import { notificar } from '#services/eventos'
+import { publicar } from '#services/eventos'
 
 /**
  * API interna del catálogo. Los demás servicios no tocan la base de MongoDB:
@@ -60,6 +60,7 @@ async function cambiar(id: number, desde: Estado, hacia: Estado, mensaje: string
     await buscar(id)
     throw conflicto(mensaje)
   }
-  if (desde !== hacia) notificar()
+  // Cambio automático (sin usuario): solo lo usa Notificaciones.
+  if (desde !== hacia) publicar(`equipment.status:${id}`, null)
   return { equipment: publico(equipo) }
 }

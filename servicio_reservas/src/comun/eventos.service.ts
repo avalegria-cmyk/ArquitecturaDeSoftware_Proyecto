@@ -1,25 +1,48 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import amqp, { type Channel, type ChannelModel } from 'amqplib';
 
-/** Avisos sin esperar respuesta: bitácora a Reportes y cambio a Notificaciones. */
+const EXCHANGE = 'uniequipos.eventos';
+
+/**
+ * Comunicación asíncrona con RabbitMQ: cada acción se publica como evento y no se espera respuesta.
+ * Reportes la guarda en la bitácora y Notificaciones avisa a los navegadores.
+ */
 @Injectable()
-export class EventosService {
+export class EventosService implements OnModuleDestroy {
   private readonly logger = new Logger(EventosService.name);
+  private conexion: ChannelModel | null = null;
+  private canal: Promise<Channel> | null = null;
 
-  private enviar(url: string | undefined, cuerpo: object) {
-    if (!url) return;
-    fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Internal-Token': process.env.INTERNAL_TOKEN ?? '', 'X-Service': 'reservas' },
-      body: JSON.stringify(cuerpo),
-      signal: AbortSignal.timeout(2000),
-    }).catch((error) => this.logger.warn(`No se pudo avisar a ${url}: ${error.message} ${JSON.stringify(cuerpo)}`));
+  private abrirCanal(): Promise<Channel> {
+    this.canal ??= (async () => {
+      const conexion = await amqp.connect(process.env.RABBITMQ_URL!);
+      const reiniciar = () => {
+        this.conexion = null;
+        this.canal = null;
+      };
+      conexion.on('close', reiniciar);
+      conexion.on('error', reiniciar);
+      this.conexion = conexion;
+      const canal = await conexion.createChannel();
+      await canal.assertExchange(EXCHANGE, 'topic', { durable: true });
+      return canal;
+    })().catch((error) => {
+      this.canal = null;
+      throw error;
+    });
+    return this.canal;
   }
 
-  auditar(userId: number, action: string) {
-    this.enviar(process.env.AUDIT_URL, { userId, action });
+  /** Publica la acción (ej. reservation.submitted:3); la clave de ruteo es lo que va antes de ":". */
+  publicar(accion: string, userId: number | null) {
+    if (!process.env.RABBITMQ_URL) return;
+    const evento = { userId, action: accion, service: 'reservas', at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z') };
+    this.abrirCanal()
+      .then((c) => c.publish(EXCHANGE, accion.split(':')[0], Buffer.from(JSON.stringify(evento)), { persistent: true, contentType: 'application/json', appId: 'reservas' }))
+      .catch((error) => this.logger.warn(`Evento pendiente, RabbitMQ no disponible: ${error.message} ${JSON.stringify(evento)}`));
   }
 
-  notificar(type = 'reservation.changed') {
-    this.enviar(process.env.NOTIFY_URL, { type });
+  async onModuleDestroy() {
+    await this.conexion?.close().catch(() => undefined);
   }
 }

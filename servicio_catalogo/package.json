@@ -33,6 +33,7 @@
     "@japa/plugin-adonisjs": "^5.2.0",
     "@japa/runner": "^5.3.0",
     "@poppinss/ts-exec": "^1.4.4",
+    "@types/amqplib": "^0.10.8",
     "@types/luxon": "^3.7.5",
     "@types/node": "~26.6.2",
     "eslint": "^10.11.0",
@@ -44,6 +45,7 @@
   "dependencies": {
     "@adonisjs/core": "^7.5.2",
     "@vinejs/vine": "^4.4.0",
+    "amqplib": "^0.10.9",
     "luxon": "^3.7.2",
     "mongoose": "^9.13.0",
     "reflect-metadata": "^0.2.2"
