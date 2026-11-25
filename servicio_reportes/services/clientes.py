@@ -39,13 +39,3 @@ async def reservas(cliente, ids: list[int]):
     return await _get(cliente, f"{_url('RESERVAS_URL', 'http://reservas:3003')}/internal/reservations", "reservas", "reservations",
                       {"ids": ",".join(map(str, ids))})
 
-
-async def notificar():
-    url = os.getenv("NOTIFY_URL")
-    if not url:
-        return
-    try:
-        async with httpx.AsyncClient(timeout=2) as cliente:
-            await cliente.post(url, json={"type": "report.changed"}, headers={"X-Internal-Token": os.getenv("INTERNAL_TOKEN", "")})
-    except httpx.HTTPError:
-        pass

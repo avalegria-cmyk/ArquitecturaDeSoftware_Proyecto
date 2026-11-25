@@ -164,6 +164,9 @@ func main() {
 	if s.token == "" {
 		log.Fatal("Configura INTERNAL_TOKEN.")
 	}
+	if url := os.Getenv("RABBITMQ_URL"); url != "" {
+		go consumir(url, s.hub)
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/events", s.eventos)
 	mux.HandleFunc("/internal/events", s.publicar)

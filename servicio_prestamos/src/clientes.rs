@@ -1,9 +1,9 @@
-//! Comunicación REST con Reservas, Catálogo, Reportes y Notificaciones.
+//! Comunicación REST (síncrona) con Reservas y Catálogo.
 use std::time::Duration;
 
 use reqwest::{Client, StatusCode};
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::Value;
 
 use crate::error::{Resultado, conflicto, no_disponible};
 
@@ -36,20 +36,15 @@ pub struct Clientes {
     token: String,
     reservas: String,
     catalogo: String,
-    auditoria: Option<String>,
-    notificaciones: Option<String>,
 }
 
 impl Clientes {
     pub fn desde_entorno(token: String) -> Self {
-        let opcional = |k: &str| std::env::var(k).ok().filter(|v| !v.is_empty());
         Clientes {
             http: Client::builder().timeout(Duration::from_secs(4)).build().expect("cliente HTTP"),
             token,
             reservas: std::env::var("RESERVAS_URL").unwrap_or_else(|_| "http://reservas:3003".into()),
             catalogo: std::env::var("CATALOGO_URL").unwrap_or_else(|_| "http://catalogo:3002".into()),
-            auditoria: opcional("AUDIT_URL"),
-            notificaciones: opcional("NOTIFY_URL"),
         }
     }
 
@@ -101,20 +96,6 @@ impl Clientes {
             }
             tracing::warn!("Reservas no recibió el préstamo de la reserva {reserva} (intento {intento})");
             tokio::time::sleep(Duration::from_secs(2 * intento)).await;
-        }
-    }
-
-    pub async fn auditar(&self, usuario: i64, accion: String) {
-        if let Some(url) = &self.auditoria {
-            if self.post(url.clone()).json(&json!({ "userId": usuario, "action": accion })).send().await.is_err() {
-                tracing::warn!("auditoría pendiente: {usuario} {accion}");
-            }
-        }
-    }
-
-    pub async fn notificar(&self) {
-        if let Some(url) = &self.notificaciones {
-            let _ = self.post(url.clone()).json(&json!({ "type": "loan.changed" })).send().await;
         }
     }
 }

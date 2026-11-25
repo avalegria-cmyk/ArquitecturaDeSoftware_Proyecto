@@ -1,5 +1,6 @@
 import { Revisiones } from "../models/revision.model";
-import { auditar, Catalogo, notificar, Prestamos } from "../services/clientes";
+import { Catalogo, Prestamos } from "../services/clientes";
+import { publicar } from "../services/eventos";
 import { invalido, prohibido } from "../services/errores";
 import { decodificar, prepararFoto } from "../services/foto";
 
@@ -74,8 +75,7 @@ export async function completar(usuario: Usuario, datos: unknown) {
     Revisiones.eliminar(id);
     throw error;
   }
-  auditar(usuario.id, `equipment.maintenance.completed:${id}`);
-  notificar();
+  publicar(`equipment.maintenance.completed:${id}`, usuario.id);
   return { message: "Revisión registrada. Equipo disponible." };
 }
 

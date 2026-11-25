@@ -5,8 +5,8 @@ name: uniequipos-micro
 
 x-interno: &interno
   INTERNAL_TOKEN: ${INTERNAL_TOKEN}
-  NOTIFY_URL: http://notificaciones:3007/internal/events
-  AUDIT_URL: http://reportes:3006/internal/audit
+  # Comunicación asíncrona: cada servicio publica sus eventos en RabbitMQ.
+  RABBITMQ_URL: amqp://uniequipos:${RABBITMQ_PASSWORD}@rabbitmq:5672
 
 services:
   # Frontend React servido por Nginx; todo /api pasa al API Gateway.
@@ -110,6 +110,7 @@ services:
     build: ./servicio_reportes
     environment:
       INTERNAL_TOKEN: ${INTERNAL_TOKEN}
+      RABBITMQ_URL: amqp://uniequipos:${RABBITMQ_PASSWORD}@rabbitmq:5672
       DATABASE_URL: mysql+pymysql://reportes:${REPORTES_DB_PASSWORD}@mysql:3306/reportes_db
       CATALOGO_URL: http://catalogo:3002
       RESERVAS_URL: http://reservas:3003
@@ -124,6 +125,26 @@ services:
     build: ./servicio_notificaciones
     environment:
       INTERNAL_TOKEN: ${INTERNAL_TOKEN}
+      RABBITMQ_URL: amqp://uniequipos:${RABBITMQ_PASSWORD}@rabbitmq:5672
+
+  # --- Mensajería asíncrona ---
+  # Broker de mensajes: los servicios publican eventos y Reportes/Notificaciones los consumen desde colas.
+  # Panel de administración en http://localhost:15672 (usuario uniequipos).
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    hostname: rabbitmq
+    ports:
+      - "127.0.0.1:${RABBITMQ_UI_PORT:-15672}:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: uniequipos
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - micro_rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
 
   # --- Bases de datos: un servidor por motor, una base y un usuario por servicio ---
   mysql:
@@ -236,4 +257,5 @@ volumes:
   micro_mongo_data:
   micro_postgres_data:
   micro_mantenimiento_data:
+  micro_rabbitmq_data:
   legado_data:

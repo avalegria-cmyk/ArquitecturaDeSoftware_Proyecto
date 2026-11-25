@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
@@ -5,6 +6,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from config.database import crear_tablas
+from services.mensajeria import consumir
 from router.interno_router import router as interno_router
 from router.reporte_router import router as reporte_router
 
@@ -12,7 +14,9 @@ from router.reporte_router import router as reporte_router
 @asynccontextmanager
 async def ciclo_de_vida(_: FastAPI):
     crear_tablas()
+    consumidor = asyncio.create_task(consumir())
     yield
+    consumidor.cancel()
 
 
 app = FastAPI(title="Servicio Reportes", version="1.0.0",

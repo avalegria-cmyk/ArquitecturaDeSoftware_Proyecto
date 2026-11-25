@@ -122,7 +122,7 @@ async fn registrar(estado: Arc<Estado>, usuario: Usuario, datos: Value, fase: &s
         (prestamo.id, Some(ahora))
     };
 
-    // Después de confirmar: copia en Reservas, bitácora y aviso a los navegadores.
+    // Después de confirmar: copia en Reservas (REST) y evento en RabbitMQ (bitácora y aviso a los navegadores).
     let accion = format!(
         "{}{}:{prestamo_id}",
         if prueba_admin { "loan.admin_test." } else { "loan." },
@@ -138,8 +138,7 @@ async fn registrar(estado: Arc<Estado>, usuario: Usuario, datos: Value, fase: &s
     let fondo = estado.clone();
     tokio::spawn(async move {
         fondo.clientes.informar_reserva(reserva_id, copia).await;
-        fondo.clientes.auditar(usuario.id, accion).await;
-        fondo.clientes.notificar().await;
+        fondo.eventos.publicar(accion, Some(usuario.id)).await;
     });
     let estado_final = if devuelto.is_some() { "devuelto" } else { "en_uso" };
     Ok(Json(json!({ "loan": { "reservationId": reserva_id, "state": estado_final } })))

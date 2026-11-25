@@ -91,8 +91,7 @@ export class ReservasService {
       return { reserva: { id: nuevo, status: 'en_revision' }, nueva: true };
     });
     if (resultado.nueva) {
-      this.eventos.auditar(usuario.id, `reservation.submitted:${resultado.reserva.id}`);
-      this.eventos.notificar();
+      this.eventos.publicar(`reservation.submitted:${resultado.reserva.id}`, usuario.id);
     }
     return { reservation: resultado.reserva, message: 'Reserva enviada. Está en revisión, pendiente del docente responsable.' };
   }
@@ -146,8 +145,7 @@ export class ReservasService {
       await this.repo.registrarDecision(cx, reservaId, usuario, paso, resultado, nota, nuevo);
       return nuevo;
     });
-    this.eventos.auditar(usuario.id, `reservation.${resultado}:${reservaId}:${paso}`);
-    this.eventos.notificar();
+    this.eventos.publicar(`reservation.${resultado}:${reservaId}:${paso}`, usuario.id);
     return { reservation: { id: reservaId, status: estado, step: paso } };
   }
 

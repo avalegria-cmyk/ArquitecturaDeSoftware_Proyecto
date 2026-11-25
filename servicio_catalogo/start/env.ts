@@ -12,7 +12,6 @@ export default await Env.create(new URL('../', import.meta.url), {
   MONGO_URL: Env.schema.string(),
   // Clave compartida con el gateway y los otros microservicios
   INTERNAL_TOKEN: Env.schema.secret(),
-  // Servicios a los que se avisa de cada cambio (opcionales)
-  AUDIT_URL: Env.schema.string.optional(),
-  NOTIFY_URL: Env.schema.string.optional(),
+  // Broker de mensajes para publicar eventos (opcional en pruebas)
+  RABBITMQ_URL: Env.schema.string.optional(),
 })

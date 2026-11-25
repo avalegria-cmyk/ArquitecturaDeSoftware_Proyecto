@@ -38,12 +38,3 @@ export const Prestamos = {
   ultimos: async (equipos: number[]) =>
     equipos.length ? (await pedir<{ loans: Prestamo[] }>(`${prestamos()}/internal/loans/latest?equipmentIds=${equipos.join(",")}`, "préstamos")).loans : [],
 };
-
-function avisar(url: string | undefined, cuerpo: object) {
-  if (!url) return;
-  fetch(url, { method: "POST", headers: cabeceras(), body: JSON.stringify(cuerpo), signal: AbortSignal.timeout(2000) })
-    .catch((e) => console.warn(`No se pudo avisar a ${url}: ${e.message}`, cuerpo));
-}
-
-export const auditar = (userId: number, action: string) => avisar(process.env.AUDIT_URL, { userId, action });
-export const notificar = () => avisar(process.env.NOTIFY_URL, { type: "maintenance.changed" });

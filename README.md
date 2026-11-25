@@ -17,6 +17,10 @@ PHP 8.4       AdonisJS       NestJS       Rust         Bun + Fastify     FastAPI
 :3001         :3002          :3003        :3004        :3005             :3006       :3007 (SSE)
 MySQL         MongoDB        PostgreSQL   PostgreSQL   SQLite            MySQL       sin base
 identidad_db  catalogo_db    reservas_db  prestamos_db mantenimiento.db  reportes_db
+   │              │              │            │             │               ▲              ▲
+   └──────────────┴──── publican eventos ─────┴─────────────┘               │ consumen     │
+                              ▼                                             │              │
+                    RabbitMQ :5672 (exchange topic "uniequipos.eventos") ───┴──────────────┘
 ```
 
 | Servicio | Tecnología | Responsabilidad | Tablas / colecciones |
@@ -34,11 +38,16 @@ identidad_db  catalogo_db    reservas_db  prestamos_db mantenimiento.db  reporte
 
 - **Descomposición por dominio de negocio (DDD).** Cada servicio es un *bounded context* con su lógica, sus datos y su API (descomposición vertical). No se dividió por capas técnicas.
 - **Database per Service.** Ningún servicio lee la base de otro. Hay un servidor por motor (MySQL, PostgreSQL y MongoDB), pero cada servicio tiene su propia base y un usuario que solo puede entrar a ella. Las claves foráneas entre módulos pasaron a ser IDs que se validan por REST, y cada servicio guarda una copia de los datos que muestra (por ejemplo, el nombre del docente en la reserva).
-- **Comunicación REST con JSON**, como en la práctica (`servicio_factura` → cliente/producto). Las URL de los otros servicios van en variables de entorno.
+- **Comunicación síncrona (REST con JSON)** cuando se necesita la respuesta en el momento, como en la práctica (`servicio_factura` → cliente/producto): Reservas pregunta a Catálogo si el equipo está disponible, Préstamos consulta la reserva, Reportes arma el historial. Las URL de los otros servicios van en variables de entorno.
+- **Comunicación asíncrona (RabbitMQ)** cuando solo se avisa algo. Identidad, Catálogo, Reservas, Préstamos y Mantenimiento publican cada acción como evento en el exchange `uniequipos.eventos` (tipo *topic*) sin esperar respuesta. Hay dos colas durables:
+  - `reportes.auditoria` (clave `#`): Reportes guarda cada evento en la bitácora.
+  - `notificaciones.cambios` (claves `equipment.#`, `reservation.#`, `loan.#`, `maintenance.#`): Notificaciones avisa a los navegadores por SSE.
+
+  Si un consumidor está apagado, los mensajes esperan en su cola y se procesan cuando vuelve. Si el broker se cae, la operación del usuario no falla: el evento queda registrado en el log del servicio y la conexión se recupera sola.
 - **Seguridad centralizada en el gateway.** El gateway valida la cookie con Identidad y envía el usuario a cada servicio en las cabeceras `X-User-*`, firmadas con `X-Internal-Token`. Las rutas `/internal/**` no se exponen al navegador.
 - **Resiliencia.** Circuit Breaker y Retry en el gateway (Resilience4j), Circuit Breaker propio en Reservas → Catálogo/Identidad, timeouts en todas las llamadas y degradación controlada (si Catálogo no responde, Reservas muestra la copia local del equipo).
 - **Saga con compensación.** Al iniciar un préstamo, primero se guarda en `prestamos_db`, después Catálogo marca la unidad como prestada y, si algo falla, se compensa (`/release`). Mantenimiento hace lo mismo al habilitar una unidad.
-- **Consistencia eventual.** Préstamos informa a Reservas cuando inicia o termina un préstamo (con reintentos). Todos los servicios envían su bitácora a Reportes y sus avisos a Notificaciones.
+- **Consistencia eventual.** Préstamos informa a Reservas cuando inicia o termina un préstamo (con reintentos), y la bitácora y los avisos llegan por RabbitMQ unos milisegundos después de cada acción.
 - **Composición de APIs.** Reportes arma el historial pidiendo datos a Catálogo, Préstamos, Reservas y Mantenimiento (reemplaza los JOIN del monolito). `GET /api/health` en el gateway agrega el estado de todos los servicios.
 
 ### Migración con el patrón Strangler
@@ -68,7 +77,7 @@ docker compose --profile migracion run --rm migracion
 ```
 
 1. `setup-env.mjs` crea `.env` con claves aleatorias. Si `.env` ya existe, solo agrega las variables que falten.
-2. `up` construye y arranca los 7 servicios, el gateway, el frontend y las 3 bases. La primera vez tarda varios minutos porque compila Java, Rust y las imágenes de Node, Bun, Python, Go y PHP.
+2. `up` construye y arranca los 7 servicios, el gateway, el frontend, las 3 bases y RabbitMQ. La primera vez tarda varios minutos porque compila Java, Rust y las imágenes de Node, Bun, Python, Go y PHP.
 3. `migracion` levanta la base del monolito con `migracion/legado/*.sql` y copia sus datos a la base de cada servicio. Solo copia si la base destino está vacía, así que se puede repetir sin duplicar datos.
 
 | Dirección | Para qué |
@@ -77,6 +86,7 @@ docker compose --profile migracion run --rm migracion
 | [localhost:3000](http://localhost:3000) | API Gateway (Postman) |
 | [localhost:3000/api/health](http://localhost:3000/api/health) | Estado de todos los microservicios |
 | [localhost:8089](http://localhost:8089) | phpMyAdmin (MySQL de Identidad y Reportes) |
+| [localhost:15672](http://localhost:15672) | Panel de RabbitMQ (usuario `uniequipos`, clave `RABBITMQ_PASSWORD` del `.env`) |
 
 Para detenerlo conservando los datos: `docker compose down`. Con `docker compose down -v` se borran las bases.
 

@@ -29,3 +29,20 @@ def test_excel_tiene_cuatro_hojas():
     libro = load_workbook(BytesIO(exportar(componer(EQUIPOS, PRESTAMOS, [], RESERVAS, "2026-11-24T00:00:00Z"))))
     assert libro.sheetnames == ["Equipos", "Préstamos", "Revisiones", "Información"]
     assert libro["Equipos"]["F2"].value == 1
+
+
+
+def test_evento_de_rabbitmq_se_guarda_en_la_bitacora(monkeypatch, tmp_path):
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from config.database import Base
+    from models.auditoria import Auditoria
+    import services.mensajeria as mensajeria
+    motor = create_engine(f"sqlite:///{tmp_path}/prueba.db")
+    Base.metadata.create_all(bind=motor)
+    Sesion = sessionmaker(bind=motor)
+    monkeypatch.setattr(mensajeria, "SessionLocal", Sesion)
+    mensajeria.guardar({"userId": 5, "action": "loan.started:3", "service": "prestamos", "at": "2026-11-25T10:00:00Z"})
+    with Sesion() as db:
+        fila = db.query(Auditoria).one()
+        assert (fila.user_id, fila.action, fila.service) == (5, "loan.started:3", "prestamos")
