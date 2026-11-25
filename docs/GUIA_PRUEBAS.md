@@ -69,6 +69,8 @@ Sirven para mostrar las características de los microservicios que vimos en las 
 | Estado general | abrir `/api/health` con un servicio detenido | `status: degradado` y ese servicio como `caido` |
 | Recuperación | `docker compose start reportes catalogo` | Todo vuelve a funcionar sin reiniciar nada más |
 | Logs con correlación | `docker compose logs gateway` | Cada petición tiene método, ruta, código, tiempo y `correlacion=` |
+| Mensajes en cola (RabbitMQ) | `docker compose stop reportes`, iniciar sesión varias veces y abrir [localhost:15672](http://localhost:15672) → **Queues** | La cola `reportes.auditoria` acumula los mensajes; al hacer `docker compose start reportes` se vacía y la bitácora queda completa |
+| Broker caído | `docker compose stop rabbitmq` y usar la aplicación | Todo sigue funcionando; los avisos en tiempo real se pausan y vuelven con `docker compose start rabbitmq` |
 | Despliegue independiente | cambiar un servicio y `docker compose up --build -d reportes` | Solo se reconstruye ese servicio |
 
 ## 5. Registrar resultados y aprobar
