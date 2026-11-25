@@ -1,0 +1,140 @@
+server:
+  port: ${PORT:3000}
+
+uniequipos:
+  # Servicio de Identidad que valida la cookie de sesión de cada petición.
+  auth-url: ${AUTH_URL:http://identidad:3001/internal/verify}
+  internal-token: ${INTERNAL_TOKEN}
+  app-origin: ${APP_ORIGIN:http://localhost:8088}
+  # Servicios que revisa GET /api/health
+  servicios:
+    identidad: ${IDENTIDAD_URL:http://identidad:3001}
+    catalogo: ${CATALOGO_URL:http://catalogo:3002}
+    reservas: ${RESERVAS_URL:http://reservas:3003}
+    prestamos: ${PRESTAMOS_URL:http://prestamos:3004}
+    mantenimiento: ${MANTENIMIENTO_URL:http://mantenimiento:3005}
+    reportes: ${REPORTES_URL:http://reportes:3006}
+    notificaciones: ${NOTIFICACIONES_URL:http://notificaciones:3007}
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 3000
+          routes:
+            # Identidad · PHP + MySQL identidad_db
+            - id: identidad
+              uri: ${IDENTIDAD_URL:http://identidad:3001}
+              predicates:
+                - Path=/api/auth/**,/api/users,/api/users/**
+              filters:
+                - name: Retry
+                  args:
+                    retries: 2
+                    methods: GET
+                    statuses: BAD_GATEWAY,SERVICE_UNAVAILABLE
+                - name: CircuitBreaker
+                  args:
+                    name: identidad
+                    fallbackUri: forward:/fallback
+            # Catálogo · AdonisJS + MongoDB catalogo_db
+            - id: catalogo
+              uri: ${CATALOGO_URL:http://catalogo:3002}
+              predicates:
+                - Path=/api/equipment,/api/equipment/**
+              filters:
+                - name: Retry
+                  args:
+                    retries: 2
+                    methods: GET
+                    statuses: BAD_GATEWAY,SERVICE_UNAVAILABLE
+                - name: CircuitBreaker
+                  args:
+                    name: catalogo
+                    fallbackUri: forward:/fallback
+            # Reservas y aprobaciones · NestJS + PostgreSQL reservas_db
+            - id: reservas
+              uri: ${RESERVAS_URL:http://reservas:3003}
+              predicates:
+                - Path=/api/reservations,/api/reservations/**,/api/approvals,/api/approvals/**
+              filters:
+                - name: Retry
+                  args:
+                    retries: 2
+                    methods: GET
+                    statuses: BAD_GATEWAY,SERVICE_UNAVAILABLE
+                - name: CircuitBreaker
+                  args:
+                    name: reservas
+                    fallbackUri: forward:/fallback
+            # Préstamos · Rust + PostgreSQL prestamos_db
+            - id: prestamos
+              uri: ${PRESTAMOS_URL:http://prestamos:3004}
+              predicates:
+                - Path=/api/loans,/api/loans/**
+              filters:
+                - name: Retry
+                  args:
+                    retries: 2
+                    methods: GET
+                    statuses: BAD_GATEWAY,SERVICE_UNAVAILABLE
+                - name: CircuitBreaker
+                  args:
+                    name: prestamos
+                    fallbackUri: forward:/fallback
+            # Mantenimiento · Bun + Fastify + SQLite
+            - id: mantenimiento
+              uri: ${MANTENIMIENTO_URL:http://mantenimiento:3005}
+              predicates:
+                - Path=/api/maintenance,/api/maintenance/**
+              filters:
+                - name: Retry
+                  args:
+                    retries: 2
+                    methods: GET
+                    statuses: BAD_GATEWAY,SERVICE_UNAVAILABLE
+                - name: CircuitBreaker
+                  args:
+                    name: mantenimiento
+                    fallbackUri: forward:/fallback
+            # Reportes y bitácora · FastAPI + MySQL reportes_db
+            - id: reportes
+              uri: ${REPORTES_URL:http://reportes:3006}
+              predicates:
+                - Path=/api/reports,/api/reports/**
+              filters:
+                - name: Retry
+                  args:
+                    retries: 2
+                    methods: GET
+                    statuses: BAD_GATEWAY,SERVICE_UNAVAILABLE
+                - name: CircuitBreaker
+                  args:
+                    name: reportes
+                    fallbackUri: forward:/fallback
+            # Notificaciones · Go (SSE). Sin Circuit Breaker ni reintentos: es una conexión larga.
+            - id: notificaciones
+              uri: ${NOTIFICACIONES_URL:http://notificaciones:3007}
+              predicates:
+                - Path=/api/events
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 30s
+
+logging:
+  level:
+    root: INFO
